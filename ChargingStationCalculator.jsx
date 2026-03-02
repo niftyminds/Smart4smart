@@ -470,9 +470,10 @@ const ChargingStationCalculator = () => {
           <div className="flex items-center justify-between h-14">
             <button
               onClick={() => navigateTo('home')}
-              className="text-slate-900 font-bold text-sm sm:text-base tracking-tight hover:text-blue-600 transition-colors whitespace-nowrap"
+              className="text-slate-900 font-bold text-sm sm:text-base tracking-tight hover:text-blue-600 transition-colors"
             >
-              Kalkulátor stanic
+              <span className="hidden md:inline">Kalkulátor instalace nabíjecích stanic</span>
+              <span className="md:hidden">Kalkulátor stanic</span>
             </button>
             <div className="flex items-center gap-1">
               <button
@@ -505,23 +506,16 @@ const ChargingStationCalculator = () => {
       <section className="bg-white border-b border-slate-200 py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl">
-            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-sm font-semibold px-4 py-2 rounded-full mb-8">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              100% nezávislé a zdarma
-            </div>
-
             <h1 className="text-4xl md:text-6xl font-bold text-slate-900 leading-tight mb-6">
-              Kolik stojí instalace<br className="hidden md:block"/> nabíjecí stanice?
+              Zjistěte cenu instalace nabíjecí stanice
             </h1>
 
             <p className="text-xl text-slate-600 mb-4 max-w-3xl leading-relaxed">
-              Nezávislý kalkulátor cen pro rodinné domy, firmy a bytové domy. Zadejte parametry vašeho projektu a získejte okamžitý orientační odhad — bez registrace a bez závazků.
+              Orientační odhad nákladů pro rodinné domy, firmy i bytové domy — bez registrace a bez závazků.
             </p>
 
             <p className="text-base text-slate-500 mb-10 max-w-2xl">
-              Ceny vycházejí z průměrných tržních cen pro rok 2026 a zahrnují kompletní instalaci včetně materiálu i práce. Výsledný odhad slouží jako orientační základ pro vaše rozhodování — finální cena vždy závisí na konkrétních podmínkách místa instalace.
+              Ceny vycházejí z průměrných tržních cen pro rok 2026 a zahrnují kompletní instalaci včetně materiálu i práce. Výsledný odhad slouží jako orientační základ pro vaše rozhodování. Finální cena se vždy odvíjí od konkrétních podmínek v místě instalace.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
@@ -529,7 +523,7 @@ const ChargingStationCalculator = () => {
                 onClick={scrollToCalculator}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl text-base"
               >
-                Spustit kalkulátor zdarma
+                Spočítat odhad
               </button>
               <button
                 onClick={scrollToCalculator}
@@ -537,20 +531,6 @@ const ChargingStationCalculator = () => {
               >
                 Jak kalkulátor funguje?
               </button>
-            </div>
-
-            <div className="mt-10 pt-10 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-6 text-sm">
-              {[
-                { label: 'Typ instalace', value: '3 segmenty' },
-                { label: 'Cenových faktorů', value: '10+' },
-                { label: 'Bez závazků', value: 'Zdarma' },
-                { label: 'Nezávislost', value: '100%' }
-              ].map((item, idx) => (
-                <div key={idx}>
-                  <div className="text-2xl font-bold text-slate-900">{item.value}</div>
-                  <div className="text-slate-500 mt-0.5">{item.label}</div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
@@ -564,7 +544,7 @@ const ChargingStationCalculator = () => {
               Jak kalkulátor funguje?
             </h2>
             <p className="text-lg text-slate-600 max-w-2xl">
-              Tři kroky k tomu, abyste věděli, kolik vás instalace nabíjecí stanice bude stát
+              Ve 3 krocích zjistíte, kolik bude stát instalace nabíjecí stanice
             </p>
           </div>
 
@@ -573,34 +553,37 @@ const ChargingStationCalculator = () => {
               {
                 step: '01',
                 title: 'Zvolte typ instalace',
-                desc: 'Vyberte, zda řešíte nabíjení pro rodinný dům, firemní prostředí nebo bytový dům. Každý segment má jiné technické požadavky a jiné cenotvorné faktory.',
+                desc: 'Vyberte, zda řešíte nabíjení pro rodinný dům, firmu nebo bytový dům. Každý typ projektu má jiné technické požadavky a odlišné faktory, které ovlivňují výslednou cenu.',
                 note: 'B2C i B2B v jednom nástroji',
-                color: 'blue'
+                stepCls: 'text-blue-100',
+                noteCls: 'text-blue-600 bg-blue-50'
               },
               {
                 step: '02',
                 title: 'Vyplňte parametry projektu',
-                desc: 'Odpovězte na otázky o vzdálenosti od rozvodné skříně, požadovaném výkonu nebo počtu stanic. Kalkulátor zohledňuje všechny klíčové faktory ovlivňující finální cenu.',
+                desc: 'Stačí doplnit několik základních údajů — například vzdálenost od rozvaděče, požadovaný výkon a počet stanic. Kalkulátor zohlední hlavní cenotvorné faktory do celkových nákladů.',
                 note: 'Průměrně 5 otázek, méně než 2 minuty',
-                color: 'indigo'
+                stepCls: 'text-indigo-100',
+                noteCls: 'text-indigo-600 bg-indigo-50'
               },
               {
                 step: '03',
                 title: 'Získejte rozpad ceny',
-                desc: 'Okamžitě uvidíte orientační cenové rozmezí (±5 %) s detailním rozpadem každé položky — od základní instalace po volitelné chytré funkce. Bez skrytých položek.',
+                desc: 'Okamžitě uvidíte orientační cenové rozmezí (±5 %) a detailní rozpad jednotlivých položek — od základní instalace až po volitelné chytré funkce. Bez skrytých položek.',
                 note: 'Orientační cena bez DPH, zdarma',
-                color: 'purple'
+                stepCls: 'text-purple-100',
+                noteCls: 'text-purple-600 bg-purple-50'
               }
             ].map((item, idx) => (
               <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-8 hover:border-blue-300 hover:shadow-lg transition-all duration-200">
-                <div className={`text-5xl font-bold text-${item.color}-100 mb-4`}>{item.step}</div>
+                <div className={`text-5xl font-bold ${item.stepCls} mb-4`}>{item.step}</div>
                 <h3 className="text-xl font-bold text-slate-900 mb-3">
                   {item.title}
                 </h3>
                 <p className="text-slate-600 leading-relaxed mb-4">
                   {item.desc}
                 </p>
-                <div className={`text-sm font-medium text-${item.color}-600 bg-${item.color}-50 inline-block px-3 py-1 rounded-full`}>
+                <div className={`text-sm font-medium ${item.noteCls} inline-block px-3 py-1 rounded-full`}>
                   {item.note}
                 </div>
               </div>
@@ -614,62 +597,66 @@ const ChargingStationCalculator = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">
-              Proč porovnávat ceny před rozhodnutím?
+              Proč použít kalkulátor před poptávkou?
             </h2>
             <p className="text-lg text-slate-600 max-w-2xl">
-              Ceny instalací nabíjecích stanic se mohou lišit o desítky procent. Zorientujte se dříve, než oslovíte první firmu.
+              Získejte rychlý přehled o cenovém rozmezí, pochopte hlavní cenotvorné faktory a lépe se připravte na poptávku konkrétní nabídky.
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             {[
               {
-                title: 'Orientační cena ještě před poptávkou',
-                desc: 'Víte dopředu, co čekat. Kalkulátor vám dá reálnou představu o nákladech dříve, než oslovíte první instalační firmu. Vyhnete se situaci, kdy první nabídka překvapí.',
+                title: 'Porovnejte náklady předem',
+                desc: 'Získejte orientační přehled o cenovém rozmezí ještě před oslovením dodavatelů. Budete vědět, s jakým rozpočtem přibližně počítat.',
                 highlight: 'Žádná registrace, žádné závazky',
                 icon: (
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
                 ),
-                color: 'blue'
+                iconCls: 'bg-blue-50 border-blue-200 text-blue-600',
+                highlightCls: 'text-blue-700 bg-blue-50'
               },
               {
-                title: 'Transparentní a nezávislé',
-                desc: 'Ceny vycházejí z průměrných tržních dat a jsou aktualizovány dle reálných zakázek. Kalkulátor zobrazuje skutečné tržní ceny — bez skrytých poplatků a bez zkreslení.',
-                highlight: 'Tržní ceny, bez skrytých položek',
+                title: 'Pochopte co cenu ovlivňuje',
+                desc: 'Výslednou cenu neurčuje jen samotná stanice. Kalkulátor zohledňuje typ objektu, výkon, vzdálenost od rozvaděče i počet stanic.',
+                highlight: 'Všechny klíčové faktory',
                 icon: (
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                 ),
-                color: 'green'
+                iconCls: 'bg-green-50 border-green-200 text-green-600',
+                highlightCls: 'text-green-700 bg-green-50'
               },
               {
-                title: 'Pokrývá B2C i B2B',
-                desc: 'Instalace pro rodinný dům se zásadně liší od řešení pro firmu nebo bytový komplex — jiné technické požadavky, jiná legislativa, jiná cenotvorba. Kalkulátor tuto komplexitu zohledňuje.',
-                highlight: 'Rodinný dům · Firma · Bytový dům',
-                icon: (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                ),
-                color: 'purple'
-              },
-              {
-                title: 'Rozpad ceny po položkách',
-                desc: 'Cenu neschovávame za jedno číslo. Vidíte přesně, co tvoří výslednou částku — od základní instalace a délky kabelu po volitelné chytré funkce jako RFID nebo dynamické řízení výkonu.',
+                title: 'Získejte přehledný rozpad ceny',
+                desc: 'Místo jednoho čísla uvidíte orientační rozpad jednotlivých položek. Snadno pochopíte, kde vznikají hlavní náklady a co může cenu navýšit.',
                 highlight: 'Transparentní, položkový přehled',
                 icon: (
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                   </svg>
                 ),
-                color: 'amber'
+                iconCls: 'bg-purple-50 border-purple-200 text-purple-600',
+                highlightCls: 'text-purple-700 bg-purple-50'
+              },
+              {
+                title: 'Rozhodujte se rychleji a jistěji',
+                desc: 'Během několika minut získáte nezávislý orientační odhad bez registrace a bez závazků. Lépe porovnáte varianty a připravíte se na další krok.',
+                highlight: 'Rychlý a nezávislý odhad',
+                icon: (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                ),
+                iconCls: 'bg-amber-50 border-amber-200 text-amber-600',
+                highlightCls: 'text-amber-700 bg-amber-50'
               }
             ].map((benefit, idx) => (
               <div key={idx} className="flex gap-5 p-6 border border-slate-200 rounded-2xl hover:border-slate-300 hover:shadow-md transition-all duration-200">
-                <div className={`flex-shrink-0 w-12 h-12 bg-${benefit.color}-50 border border-${benefit.color}-200 rounded-xl flex items-center justify-center text-${benefit.color}-600`}>
+                <div className={`flex-shrink-0 w-12 h-12 ${benefit.iconCls} border rounded-xl flex items-center justify-center`}>
                   {benefit.icon}
                 </div>
                 <div>
@@ -679,7 +666,7 @@ const ChargingStationCalculator = () => {
                   <p className="text-slate-600 text-sm leading-relaxed mb-3">
                     {benefit.desc}
                   </p>
-                  <span className={`text-xs font-semibold text-${benefit.color}-700 bg-${benefit.color}-50 px-2 py-1 rounded`}>
+                  <span className={`text-xs font-semibold ${benefit.highlightCls} px-2 py-1 rounded`}>
                     {benefit.highlight}
                   </span>
                 </div>
@@ -701,7 +688,7 @@ const ChargingStationCalculator = () => {
                 </svg>
               </div>
               <h2 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent mb-4">
-                Kalkulačka nabíjecích stanic
+                Kalkulátor instalace nabíjecích stanic
               </h2>
               <p className="text-xl text-slate-600 max-w-2xl mx-auto">
                 Získejte orientační cenovou nabídku pro instalaci nabíjecí stanice
@@ -711,7 +698,7 @@ const ChargingStationCalculator = () => {
           {page === 'calculator' && (
             <div className="text-center mb-10">
               <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">
-                Kalkulátor cen nabíjecích stanic
+                Zjistěte cenu instalace nabíjecí stanice
               </h1>
               <p className="text-lg text-slate-600 max-w-xl mx-auto">
                 Orientační odhad ceny instalace pro váš typ objektu — zdarma a bez závazků.
@@ -784,21 +771,21 @@ const ChargingStationCalculator = () => {
                         id: 'rodinny',
                         title: 'Rodinný dům',
                         icon: <HomeIcon />,
-                        desc: 'Privátní nabíjení pro vaši domácnost',
+                        desc: 'Soukromé nabíjecí u Vás doma',
                         gradient: 'from-blue-500 to-blue-600'
                       },
                       {
                         id: 'firemni',
                         title: 'Firemní prostředí',
                         icon: <BuildingIcon />,
-                        desc: 'Flotila, zaměstnanci a návštěvy',
+                        desc: 'Nabíjení firemních nebo zaměstnaneckých vozidel a návštěv',
                         gradient: 'from-purple-500 to-purple-600'
                       },
                       {
                         id: 'bytovy',
                         title: 'Bytový dům',
                         icon: <ApartmentIcon />,
-                        desc: 'Společná nabíjecí infrastruktura',
+                        desc: 'Koncepční řešení nabíjení v bytovém domě',
                         gradient: 'from-cyan-500 to-cyan-600'
                       }
                     ].map((seg) => (
@@ -1985,35 +1972,6 @@ const ChargingStationCalculator = () => {
       )}
 
       {page === 'home' && <>
-      {/* Context / Market Info */}
-      <section className="py-12 bg-slate-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-            <div>
-              <div className="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Proč to má smysl porovnat</div>
-              <h2 className="text-2xl md:text-3xl font-bold">Elektromobilita v číslech</h2>
-            </div>
-            <p className="text-slate-400 max-w-sm text-sm leading-relaxed">
-              Ceny instalací se v ČR pohybují v širokém rozsahu. Rozdíl mezi nejlevnější a nejdražší nabídkou může být i 40 %.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { number: '30–40 %', label: 'Průměrný rozdíl mezi nabídkami instalačních firem', sub: 'Zdroj: tržní průzkum 2024' },
-              { number: '10 000+', label: 'Nových wallboxů ročně instalováno v ČR', sub: 'A počet roste každým rokem' },
-              { number: '3 typy', label: 'Různé typy instalací s odlišnou cenotvorbou', sub: 'B2C i B2B v jednom kalkulátoru' },
-              { number: 'Zdarma', label: 'Používání kalkulátoru, bez registrace', sub: 'Bez poplatků a bez závazků' }
-            ].map((stat, idx) => (
-              <div key={idx} className="bg-slate-800 rounded-xl p-5 border border-slate-700">
-                <div className="text-3xl font-bold text-white mb-2">{stat.number}</div>
-                <div className="text-slate-300 text-sm leading-tight mb-1">{stat.label}</div>
-                <div className="text-slate-500 text-xs">{stat.sub}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* FAQ Section - general */}
       <section className="py-16 bg-white border-t border-slate-100">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -2029,28 +1987,24 @@ const ChargingStationCalculator = () => {
           <div className="space-y-3">
             {[
               {
-                q: 'Z čeho se skládá cena instalace nabíjecí stanice?',
-                a: 'Cena se typicky skládá ze čtyř složek: samotná nabíjecí stanice (hardware), materiál (kabely, jistič, kabelový kanál), práce elektrikáře a případné stavební či elektro úpravy. Kalkulátor tyto složky zohledňuje a zobrazuje je odděleně v detailním rozpadu ceny.'
+                q: 'Je výsledek kalkulátoru závazná nabídka?',
+                a: 'Ne. Výsledek slouží jako orientační odhad pro porovnání variant a plánování rozpočtu. Přesná cena se stanovuje až podle konkrétních podmínek v místě instalace.'
               },
               {
-                q: 'Jsou ceny v kalkulátoru orientační nebo závazné?',
-                a: 'Ceny jsou orientační — vycházejí z průměrných tržních cen za rok 2024 a slouží jako výchozí referenční bod. Finální cena závisí na konkrétních podmínkách místa instalace, které technik posoudí při osobní obhlídce. Proto zobrazujeme rozmezí ±5 %.'
+                q: 'Co může finální cenu nejvíce ovlivnit?',
+                a: 'Typicky jde o vzdálenost od rozvaděče, požadovaný výkon, počet stanic, stav stávající elektroinstalace, nutné úpravy rozvaděče a stavební práce.'
               },
               {
-                q: 'Liší se ceny výrazně mezi dodavateli?',
-                a: 'Ano, rozdíly mohou být i 30–40 %. Záleží na výběru hardware (stanice různých výrobců mají různou cenu), na rozsahu elektro prací a na obchodní politice konkrétní firmy. Znalost orientační tržní ceny vám pomůže odhalit nabídky, které jsou výrazně mimo trh.'
+                q: 'Pro koho je kalkulátor určen?',
+                a: 'Pro rodinné domy, firmy i bytové domy (včetně SVJ/BD), které chtějí získat rychlý orientační odhad instalačních nákladů před poptávkou konkrétní nabídky.'
               },
               {
-                q: 'Jak jsou ceny v kalkulátoru vypočítány?',
-                a: 'Ceny vycházejí z průměrných tržních dat za rok 2026 a jsou průběžně aktualizovány dle reálných zakázek. Kalkulátor zohledňuje všechny klíčové nákladové položky — hardware (stanice), materiál (kabeláž, jistič) i práci elektrikáře.'
+                q: 'Musím se registrovat?',
+                a: 'Ne. Kalkulátor můžete použít bez registrace a bez závazků.'
               },
               {
-                q: 'Musím platit za použití kalkulátoru nebo se registrovat?',
-                a: 'Ne, kalkulátor je zcela zdarma a bez registrace. Jediné, co požadujeme před zobrazením výsledku, je e-mail a telefon — ty slouží k tomu, aby vás mohl kontaktovat odborník s přesnější nabídkou. Údaje nesdílíme s třetími stranami bez vašeho souhlasu.'
-              },
-              {
-                q: 'Kdy se mi investice do nabíjecí stanice vrátí?',
-                a: 'U elektromobilů nabíjených doma se investice do wallboxu vrátí zpravidla do 2–4 let díky výrazně nižším nákladům na provoz oproti spalovacím motorům. Přesná návratnost závisí na počtu najetých km, ceně elektřiny a tarifu, ve kterém nabíjíte.'
+                q: 'Umíte i realizaci instalace?',
+                a: 'Ano, kalkulátor slouží jako první krok. Pokud budete chtít, navážeme přesnější nabídkou a návrhem řešení podle konkrétního místa instalace.'
               }
             ].map((faq, idx) => (
               <details key={idx} className="border border-slate-200 rounded-xl group">
@@ -2073,16 +2027,16 @@ const ChargingStationCalculator = () => {
       <section className="py-16 bg-blue-600">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Zjistěte cenu vaší instalace
+            Zjistěte cenu Vaší instalace
           </h2>
           <p className="text-blue-100 text-lg mb-8 max-w-xl mx-auto">
-            Zdarma, nezávisle a bez závazků. Výsledek s rozpadem ceny dostanete do 2 minut.
+            Zdarma a bez závazků. Výsledek s rozpadem ceny získáte do 2 minut.
           </p>
           <button
             onClick={scrollToCalculator}
             className="bg-white text-blue-600 hover:bg-blue-50 font-bold py-4 px-10 rounded-xl transition-all duration-200 shadow-lg text-base"
           >
-            Spustit kalkulátor zdarma
+            Spočítat odhad
           </button>
         </div>
       </section>
@@ -2094,7 +2048,7 @@ const ChargingStationCalculator = () => {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div className="md:col-span-2">
               <div className="text-lg font-bold text-white mb-2">
-                Kalkulátor cen nabíjecích stanic
+                Kalkulátor instalace nabíjecích stanic
               </div>
               <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
                 Orientační kalkulátor cen instalace nabíjecích stanic pro elektromobily v ČR. Ceny vycházejí z průměrných tržních dat pro rok 2026.
@@ -2120,7 +2074,7 @@ const ChargingStationCalculator = () => {
             </div>
           </div>
           <div className="border-t border-slate-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-3 text-slate-500 text-xs">
-            <p>&copy; 2024 Kalkulátor cen nabíjecích stanic. Všechna práva vyhrazena.</p>
+            <p>&copy; 2024 Kalkulátor instalace nabíjecích stanic. Všechna práva vyhrazena.</p>
             <p>Ceny jsou orientační a vycházejí z průměrných tržních dat pro rok 2026.</p>
           </div>
         </div>
