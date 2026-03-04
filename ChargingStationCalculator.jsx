@@ -80,8 +80,9 @@ const ChargingStationCalculator = () => {
 
       if (rodinnyData.smartFunctions.dynamicPower) {
         price += 36366;
-        if (rodinnyData.smartFunctions.lowTariff) {
-          price += 2000;
+        // RFID lze přidat i s dynamickým řízením
+        if (rodinnyData.smartFunctions.rfid) {
+          price += 4000;
         }
       } else {
         const hasAnySmartFunction =
@@ -152,14 +153,12 @@ const ChargingStationCalculator = () => {
       // Smart funkce
       if (rodinnyData.smartFunctions.dynamicPower) {
         items.push({
-          description: 'Dynamické řízení výkonu (včetně plánování a RFID)',
+          description: 'Dynamické řízení výkonu (zahrnuje plánování a možnost nízkého tarifu)',
           price: 36366
         });
-        if (rodinnyData.smartFunctions.lowTariff) {
-          items.push({
-            description: 'Možnost nabíjení v nízkém tarifu (zvýhodněná cena)',
-            price: 2000
-          });
+        // RFID lze přidat i s dynamickým řízením
+        if (rodinnyData.smartFunctions.rfid) {
+          items.push({ description: 'RFID autorizace', price: 4000 });
         }
       } else {
         const hasAnySmartFunction =
@@ -1030,7 +1029,7 @@ const ChargingStationCalculator = () => {
                       </label>
                       <p className="text-sm text-slate-600 mb-4">
                         {rodinnyData.smartFunctions.dynamicPower
-                          ? '✓ Dynamické řízení zahrnuje plánování nabíjení a RFID zabezpečení'
+                          ? '✓ Dynamické řízení zahrnuje plánování nabíjení a možnost nabíjení v nízkém tarifu'
                           : 'Bez výběru smart funkce se použije základní stanice'}
                       </p>
                       <div className="space-y-3">
@@ -1047,20 +1046,23 @@ const ChargingStationCalculator = () => {
                               <Tooltip text="Sleduje aktuální spotřebu elektřiny v domě a podle toho přizpůsobuje výkon nabíjení. Zabrání přetížení jističů, když jedete pračkou, troubou i nabíjíte auto zároveň." />
                             </div>
                             <p className="text-sm text-slate-600 mt-1">
-                              Zahrnuje plánování nabíjení a RFID zabezpečení
+                              Zahrnuje plánování nabíjení a možnost nabíjení v nízkém tarifu
                             </p>
                           </div>
                         </label>
 
                         <label className={`flex items-start p-4 rounded-xl cursor-pointer transition-all ${
-                          rodinnyData.smartFunctions.lowTariff
+                          rodinnyData.smartFunctions.dynamicPower
+                            ? 'opacity-50 cursor-not-allowed bg-slate-50'
+                            : rodinnyData.smartFunctions.lowTariff
                             ? 'bg-white shadow-md border-2 border-green-500'
                             : 'bg-white/50 border-2 border-transparent hover:bg-white hover:shadow'
                         }`}>
                           <input
                             type="checkbox"
                             checked={rodinnyData.smartFunctions.lowTariff}
-                            onChange={() => handleSmartFunctionToggle('lowTariff')}
+                            onChange={() => !rodinnyData.smartFunctions.dynamicPower && handleSmartFunctionToggle('lowTariff')}
+                            disabled={rodinnyData.smartFunctions.dynamicPower}
                             className="mt-1 w-5 h-5 text-green-600 rounded"
                           />
                           <div className="ml-3 flex-1">
@@ -1069,9 +1071,7 @@ const ChargingStationCalculator = () => {
                               <Tooltip text="Nízký tarif je levnější noční sazba elektřiny (typicky 22:00–6:00). Stanice automaticky spustí nabíjení, až tarif poklesne — takže nabíjíte levněji bez toho, abyste na to museli myslet." />
                             </div>
                             {rodinnyData.smartFunctions.dynamicPower && (
-                              <p className="text-sm text-green-600 mt-1 font-medium">
-                                ✓ Zvýhodněná cena s dynamickým řízením
-                              </p>
+                              <p className="text-sm text-slate-500 mt-1">Zahrnuto v dynamickém řízení</p>
                             )}
                           </div>
                         </label>
@@ -1100,15 +1100,14 @@ const ChargingStationCalculator = () => {
                         </label>
 
                         <label className={`flex items-start p-4 rounded-xl cursor-pointer transition-all ${
-                          rodinnyData.smartFunctions.dynamicPower
-                            ? 'opacity-50 cursor-not-allowed bg-slate-50'
+                          rodinnyData.smartFunctions.rfid
+                            ? 'bg-white shadow-md border-2 border-blue-500'
                             : 'bg-white/50 border-2 border-transparent hover:bg-white hover:shadow'
                         }`}>
                           <input
                             type="checkbox"
                             checked={rodinnyData.smartFunctions.rfid}
-                            onChange={() => !rodinnyData.smartFunctions.dynamicPower && handleSmartFunctionToggle('rfid')}
-                            disabled={rodinnyData.smartFunctions.dynamicPower}
+                            onChange={() => handleSmartFunctionToggle('rfid')}
                             className="mt-1 w-5 h-5 text-blue-600 rounded"
                           />
                           <div className="ml-3 flex-1">
@@ -1116,9 +1115,6 @@ const ChargingStationCalculator = () => {
                               RFID zabezpečení
                               <Tooltip text="RFID karta nebo přívěsek funguje jako klíč ke stanici. Nabíjení se spustí až po přiložení karty — zabrání neoprávněnému použití sousedy nebo kolemjdoucími." />
                             </div>
-                            {rodinnyData.smartFunctions.dynamicPower && (
-                              <p className="text-sm text-slate-500 mt-1">Zahrnuto v dynamickém řízení</p>
-                            )}
                           </div>
                         </label>
                       </div>
