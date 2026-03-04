@@ -509,32 +509,42 @@ const ChargingStationCalculator = () => {
       {page === 'home' && <>
       <section className="bg-white border-b border-slate-200 py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl">
-            <h1 className="text-4xl md:text-6xl font-bold text-slate-900 leading-tight mb-6">
-              Zjistěte cenu instalace nabíjecí stanice
-            </h1>
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h1 className="text-4xl md:text-6xl font-bold text-slate-900 leading-tight mb-6">
+                Zjistěte cenu instalace nabíjecí stanice
+              </h1>
 
-            <p className="text-xl text-slate-600 mb-4 max-w-3xl leading-relaxed">
-              Orientační odhad nákladů pro rodinné domy, firmy i bytové domy — bez registrace a bez závazků.
-            </p>
+              <p className="text-xl text-slate-600 mb-4 leading-relaxed">
+                Orientační odhad nákladů pro rodinné domy, firmy i bytové domy — bez registrace a bez závazků.
+              </p>
 
-            <p className="text-base text-slate-500 mb-10 max-w-2xl">
-              Ceny vycházejí z průměrných tržních cen pro rok 2026 a zahrnují kompletní instalaci včetně materiálu i práce. Výsledný odhad slouží jako orientační základ pro vaše rozhodování. Finální cena se vždy odvíjí od konkrétních podmínek v místě instalace.
-            </p>
+              <p className="text-base text-slate-500 mb-10">
+                Ceny vycházejí z průměrných tržních cen pro rok 2026 a zahrnují kompletní instalaci včetně materiálu i práce. Výsledný odhad slouží jako orientační základ pro vaše rozhodování. Finální cena se vždy odvíjí od konkrétních podmínek v místě instalace.
+              </p>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <button
-                onClick={scrollToCalculator}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl text-base"
-              >
-                Spočítat odhad
-              </button>
-              <button
-                onClick={scrollToCalculator}
-                className="border-2 border-slate-300 text-slate-700 hover:border-blue-600 hover:text-blue-600 font-semibold py-4 px-8 rounded-xl transition-all duration-200 text-base"
-              >
-                Jak kalkulátor funguje?
-              </button>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={scrollToCalculator}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl text-base"
+                >
+                  Spočítat odhad
+                </button>
+                <button
+                  onClick={scrollToCalculator}
+                  className="border-2 border-slate-300 text-slate-700 hover:border-blue-600 hover:text-blue-600 font-semibold py-4 px-8 rounded-xl transition-all duration-200 text-base"
+                >
+                  Jak kalkulátor funguje?
+                </button>
+              </div>
+            </div>
+
+            <div className="hidden md:block">
+              <img
+                src="/images/hero-illustration.svg"
+                alt="Kalkulátor instalace nabíjecích stanic"
+                className="w-full h-auto"
+              />
             </div>
           </div>
         </div>
