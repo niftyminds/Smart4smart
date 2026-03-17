@@ -300,6 +300,10 @@ const ChargingStationCalculator = () => {
     return items;
   };
 
+  const calculatePrice = () => {
+    return basePrice;
+  };
+
   const isQuestionnaireComplete = () => {
     if (segment === 'rodinny') {
       return rodinnyData.chargingLocation &&
