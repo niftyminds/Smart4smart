@@ -25,6 +25,15 @@ const ChargingStationCalculator = () => {
     window.location.hash === '#calculator' ? 'calculator' : 'home'
   );
 
+  // Modals
+  const [showGdprModal, setShowGdprModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
+  // Flow control
+  const [step, setStep] = useState('segment');
+  const [segment, setSegment] = useState('');
+  const calculatorRef = useRef(null);
+
   const navigateTo = (target) => {
     setPage(target);
     window.location.hash = target === 'calculator' ? 'calculator' : '';
@@ -81,15 +90,6 @@ const ChargingStationCalculator = () => {
       });
     }
   }, [step, segment]);
-
-  // Modals
-  const [showGdprModal, setShowGdprModal] = useState(false);
-  const [showTermsModal, setShowTermsModal] = useState(false);
-
-  // Flow control
-  const [step, setStep] = useState('segment');
-  const [segment, setSegment] = useState('');
-  const calculatorRef = useRef(null);
 
   // States (same as before)
   const [rodinnyData, setRodinnyData] = useState({
