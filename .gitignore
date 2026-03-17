@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Source files and documents
+Fotky/
+*.docx
+*.pdf
