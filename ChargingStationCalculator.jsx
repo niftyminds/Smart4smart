@@ -1,6 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const ChargingStationCalculator = () => {
+  // GTM DataLayer helper
+  const pushToDataLayer = (eventName, eventData = {}) => {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: eventName,
+      ...eventData
+    });
+    console.log('📊 DataLayer Event:', eventName, eventData);
+  };
+
+  // Helper function for price ranges (for remarketing audiences)
+  const getPriceRange = (price) => {
+    if (price < 100000) return '0-100k';
+    if (price < 200000) return '100-200k';
+    if (price < 300000) return '200-300k';
+    if (price < 500000) return '300-500k';
+    return '500k+';
+  };
+
   // Page routing
   const [page, setPage] = useState(() =>
     window.location.hash === '#calculator' ? 'calculator' : 'home'
@@ -20,6 +39,48 @@ const ChargingStationCalculator = () => {
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
+
+  // Track when calculator section becomes visible
+  useEffect(() => {
+    if (!calculatorRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // GTM Event: Calculator viewed
+            pushToDataLayer('view_calculator', {
+              page: page,
+              viewport: window.innerWidth < 768 ? 'mobile' : 'desktop'
+            });
+            // Trigger only once
+            observer.disconnect();
+          }
+        });
+      },
+      { threshold: 0.3 } // Trigger when 30% visible
+    );
+
+    observer.observe(calculatorRef.current);
+
+    return () => observer.disconnect();
+  }, [page]);
+
+  // Track when result is displayed
+  useEffect(() => {
+    if (step === 'result') {
+      const finalPrice = calculatePrice();
+      // GTM Event: Price result viewed
+      pushToDataLayer('view_price_result', {
+        segment: segment,
+        segment_name: segment === 'rodinny' ? 'Rodinný dům' :
+                      segment === 'firemni' ? 'Firemní prostředí' : 'Bytový dům',
+        price: finalPrice,
+        price_range: getPriceRange(finalPrice),
+        currency: 'CZK'
+      });
+    }
+  }, [step, segment]);
 
   // Modals
   const [showGdprModal, setShowGdprModal] = useState(false);
@@ -57,7 +118,7 @@ const ChargingStationCalculator = () => {
     installLocation: '',
     approvalStatus: '',
     stationCount: '',
-    commonPower: false
+    commonPower: ''
   });
 
   const [leadData, setLeadData] = useState({
@@ -121,7 +182,7 @@ const ChargingStationCalculator = () => {
       else if (bytovyData.stationCount === '5') price += 203000;
       else if (bytovyData.stationCount === '10') price += 737000;
 
-      if (bytovyData.commonPower) price += 9823;
+      if (bytovyData.commonPower === 'yes') price += 9823;
     }
 
     setBasePrice(price);
@@ -204,7 +265,7 @@ const ChargingStationCalculator = () => {
 
       // Rozúčtování nákladů
       if (firemniData.costAccounting) {
-        items.push({ description: 'Rozúčtování nákladů mezi uživatele', price: 5000 });
+        items.push({ description: 'Přehledné rozúčtování spotřeby mezi uživatele', price: 5000 });
       }
 
       // Stav přípravy
@@ -231,7 +292,7 @@ const ChargingStationCalculator = () => {
       }
 
       // Společné rozvody
-      if (bytovyData.commonPower) {
+      if (bytovyData.commonPower === 'yes') {
         items.push({ description: 'Společné rozvody v domě', price: 9823 });
       }
     }
@@ -259,12 +320,26 @@ const ChargingStationCalculator = () => {
   };
 
   const handleSegmentSelect = (selectedSegment) => {
+    // GTM Event: Segment Selection
+    pushToDataLayer('select_segment', {
+      segment_type: selectedSegment === 'rodinny' ? 'Rodinný dům' :
+                    selectedSegment === 'firemni' ? 'Firemní prostředí' : 'Bytový dům',
+      segment_id: selectedSegment
+    });
+
     setSegment(selectedSegment);
     setStep('questionnaire');
   };
 
   const handleContinueToLead = () => {
     if (isQuestionnaireComplete()) {
+      // GTM Event: Begin Checkout (user proceeds to lead form)
+      pushToDataLayer('begin_checkout', {
+        segment: segment,
+        estimated_price: calculatePrice(),
+        currency: 'CZK'
+      });
+
       setStep('lead');
       setTimeout(() => calculatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     }
@@ -272,16 +347,30 @@ const ChargingStationCalculator = () => {
 
   const handleLeadSubmit = (e) => {
     e.preventDefault();
+    const finalPrice = calculatePrice();
     const fullLeadData = {
       segment,
       email: leadData.email,
       phone: leadData.phone,
-      estimatedPrice: basePrice,
+      estimatedPrice: finalPrice,
       questionnaire: segment === 'rodinny' ? rodinnyData :
                      segment === 'firemni' ? firemniData :
                      bytovyData
     };
     console.log('Lead data:', fullLeadData);
+
+    // GTM Event: Lead Conversion
+    pushToDataLayer('generate_lead', {
+      segment: segment,
+      segment_name: segment === 'rodinny' ? 'Rodinný dům' :
+                    segment === 'firemni' ? 'Firemní prostředí' : 'Bytový dům',
+      price: finalPrice,
+      price_range: getPriceRange(finalPrice),
+      currency: 'CZK',
+      email: leadData.email,
+      phone: leadData.phone
+    });
+
     setStep('result');
     setTimeout(() => calculatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
@@ -297,6 +386,12 @@ const ChargingStationCalculator = () => {
   };
 
   const scrollToCalculator = () => {
+    // GTM Event: CTA Click
+    pushToDataLayer('click_cta', {
+      cta_location: page === 'home' ? 'hero' : 'navbar',
+      cta_text: 'Spočítat odhad'
+    });
+
     if (page === 'home') {
       calculatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
@@ -307,68 +402,68 @@ const ChargingStationCalculator = () => {
   const segmentFaqs = {
     rodinny: [
       {
-        q: 'Jaký výkon wallboxu zvolit pro rodinný dům?',
-        a: 'Pro rodinný dům je nejběžnější wallbox s výkonem 11 kW (trifázové nabíjení). Při průměrné denní jízdě 50 km zvládne přes noc doplnit dostatek energie. Výkon 22 kW má smysl jen pokud máte výkonnou přípojku a potřebujete nabít rychle — většina domácností ho nevyužije naplno.'
+        q: 'Lze nabíjecí stanici nainstalovat do každého domu?',
+        a: 'Ve většině rodinných domů ano. Vždy ale záleží na stavu elektroinstalace, velikosti hlavního jističe a dostupném příkonu. Před instalací se proto doporučuje odborné posouzení, díky kterému zjistíte, jaké řešení je pro Váš dům nejvhodnější a bezpečné.'
       },
       {
-        q: 'Co je dynamické řízení výkonu a proč se vyplatí?',
-        a: 'Dynamické řízení sleduje aktuální spotřebu domácnosti a přizpůsobuje výkon nabíjení tak, aby nedošlo k přetížení jističů. Vyplatí se v domech s menší elektro přípojkou nebo pokud nabíjíte ve špičce (ráno, večer). Bez něj hrozí výpadek jističe při souběhu spotřebičů.'
+        q: 'Nebude nabíjení přetěžovat elektroinstalaci v domě?',
+        a: 'Správně navržená nabíjecí stanice provoz domácnosti neohrozí. Pokud je součástí řešení dynamické řízení výkonu, stanice automaticky hlídá aktuální spotřebu domu a upravuje výkon nabíjení tak, aby nedošlo k přetížení hlavního jističe.'
       },
       {
-        q: 'Jak daleko může být stanice od rozvodné skříně?',
-        a: 'Doporučená vzdálenost je do 15 m. Každý metr navíc znamená náklady na kabeláž a práci. Nad 15 m se instalace prodražuje — přibývají materiálové i časové náklady. Při plánování umístění stanice je ideální konzultovat s technikem nejefektivnější trasu.'
+        q: 'Je nabíjení doma levnější než na veřejné stanici?',
+        a: 'Určitě ano. Domácí nabíjení bývá cenově výhodnější a zároveň pohodlnější, protože vůz nabíjíte tam, kde běžně parkujete. Další úsporu může přinést nabíjení v nízkém tarifu nebo chytré plánování nabíjení.'
       },
       {
-        q: 'Jsou dostupné dotace na wallbox pro rodinný dům?',
-        a: 'Ano. V rámci programu Nová zelená úsporám je možné získat příspěvek až 30 000 Kč na instalaci wallboxu. Podmínkou je vlastnictví elektromobilu nebo plug-in hybridu a splnění technických parametrů. Žádost podáváte po dokončení instalace.'
+        q: 'Potřebuji pro instalaci nějaké povolení?',
+        a: 'U většiny běžných domácích instalací není potřeba složité povolování. Důležité ale je, aby montáž provedla odborně způsobilá firma a vše bylo zakončeno výchozí revizí. U specifických objektů nebo větších úprav se může postup lišit.'
       },
       {
-        q: 'Mohu instalovat wallbox i na chatě nebo v pronajaté garáži?',
-        a: 'Technicky ano, pokud jsou dostupné potřebné elektrické rozvody. U pronajaté garáže nebo cizí nemovitosti je nutný písemný souhlas vlastníka. Na chatě záleží na stavu přípojky — někdy je potřeba přípojku posílit.'
+        q: 'Jaký je rozdíl mezi nabíjením ze zásuvky a z nabíjecí stanice?',
+        a: 'Běžná zásuvka není určená pro dlouhodobé pravidelné nabíjení elektromobilu ve vyšším výkonu. Nabíjecí stanice je bezpečnější, rychlejší a nabízí i chytré funkce, jako je řízení výkonu, plánování nabíjení nebo zabezpečení přístupu.'
       }
     ],
     firemni: [
       {
-        q: 'Jaký typ nabíjení zvolit pro firmu — AC nebo DC?',
-        a: 'AC wallboxy (do 22 kW) jsou vhodné pro noční nabíjení firemní flotily, kdy auta stojí přes noc. DC rychlonabíječe (40–400 kW) se vyplatí jako veřejné nebo zákaznické nabíjení, kde auto stojí kratší dobu — například u obchodních center nebo čerpacích stanic.'
+        q: 'Je naše firma připravená na instalaci nabíjecích stanic?',
+        a: 'Ve většině případů ano. Je ale potřeba ověřit dostupnou kapacitu, stav elektroinstalace a možnosti umístění. Na základě odborného posouzení lze navrhnout vhodné a bezpečné řešení pro konkrétní provoz.'
       },
       {
-        q: 'Jak funguje rozúčtování nákladů za nabíjení ve firmě?',
-        a: 'Systém eviduje spotřebu každého uživatele pomocí RFID karty nebo přihlášení přes aplikaci. Náklady lze přiřadit konkrétním zaměstnancům, vozidlům nebo nákladovým střediskům. Výhodou je i možnost fakturace zákazníkům nebo návštěvníkům za skutečně odebranou energii.'
+        q: 'Kolik nabíjecích stanic budeme potřebovat?',
+        a: 'To záleží na počtu vozidel, jejich vytížení a plánech do budoucna. Řešení by mělo odpovídat současným potřebám firmy a zároveň umožnit snadné rozšíření infrastruktury.'
       },
       {
-        q: 'Jak řešit kapacitu přípojky při instalaci více stanic?',
-        a: 'Klíčové je load management — chytré řízení, které rozděluje dostupný výkon mezi všechny stanice podle aktuální potřeby. Tím lze provozovat více stanic bez nutnosti posilování přípojky, což výrazně snižuje náklady na infrastrukturu. Kalkulátor tuto položku zohledňuje ve stavu přípravy.'
+        q: 'Lze oddělit nabíjení zaměstnanců, firemních vozů a návštěv?',
+        a: 'Ano. Systém umožňuje přehledně evidovat nabíjení podle jednotlivých uživatelů nebo vozidel, nastavit přístupová oprávnění a následně spotřebu i náklady rozúčtovat.'
       },
       {
-        q: 'Existují daňové výhody nebo dotace pro firemní nabíjecí stanice?',
-        a: 'Ano. Investici do nabíjecí infrastruktury lze zahrnout do daňově uznatelných nákladů. Navíc jsou dostupné dotace z fondů EU (OP TAK) a národních programů pro podnikatele — výše závisí na velikosti firmy a účelu instalace (zaměstnanci vs. veřejné nabíjení).'
+        q: 'Jak zabránit přetížení firemní elektroinstalace?',
+        a: 'Pomocí dynamického řízení výkonu lze řídit výkon nabíjení podle aktuální spotřeby objektu. Díky tomu je možné nabíjet efektivně a bezpečně bez přetížení hlavního přívodu.'
       },
       {
-        q: 'Potřebujeme souhlas majitele nebo správce budovy?',
-        a: 'Ano, pokud firma nesídlí ve vlastní budově, je nutný souhlas pronajímatele. Instalace zasahuje do elektro rozvodů budovy. Pomůžeme vám připravit technické podklady pro jednání s majitelem nebo správcem, včetně návrhu reverzibility instalace.'
+        q: 'Dá se firemní nabíjecí infrastruktura připravit i pro budoucí rozšíření?',
+        a: 'Ano, a právě to je při návrhu velmi důležité. Dobře navržená infrastruktura počítá s budoucím navýšením počtu vozidel i nabíjecích bodů, takže firma nemusí při dalším rozšiřování začínat od začátku.'
       }
     ],
     bytovy: [
       {
-        q: 'Kdo musí souhlasit s instalací nabíjecí stanice v bytovém domě?',
-        a: 'O instalaci rozhoduje shromáždění SVJ — nadpoloviční většinou hlasů pro individuální stanice, dvoutřetinovou většinou pro zásahy do společných částí domu (rozvody, rozvaděč). Pokud SVJ neexistuje, je nutný souhlas všech spoluvlastníků budovy.'
+        q: 'Nebude nabíjení přetěžovat elektroinstalaci domu?',
+        a: 'Správně navržené řešení s tím počítá. Pomocí dynamického řízení výkonu lze hlídat celkové zatížení objektu a automaticky upravovat výkon nabíjení podle aktuální spotřeby domu. Tím se snižuje riziko přetížení hlavního přívodu.'
       },
       {
-        q: 'Jak se dělí náklady na instalaci v bytovém domě?',
-        a: 'Náklady na společnou infrastrukturu (rozvody, datová síť, rozvaděč) lze rozdělit rovným dílem nebo poměrně dle podílů. Individuální stanice si hradí každý vlastník sám. Výhodou etapového přístupu je, že se v budoucnu každý napojí na již existující infrastrukturu za zlomek nákladů.'
+        q: 'Kdo hradí spotřebu elektřiny při nabíjení?',
+        a: 'To záleží na zvoleném řešení. Spotřebu lze měřit u každého uživatele samostatně a náklady pak přesně rozúčtovat. Díky tomu je možné spravedlivě oddělit soukromé nabíjení od společné spotřeby domu.'
       },
       {
-        q: 'Musí mít nutně všechny byty vlastní nabíjecí stanici?',
-        a: 'Ne. Systém lze budovat postupně — nejprve se vybuduje páteřní infrastruktura (silnoproud, datová síť, rozvaděč), poté každý vlastník připojuje svou stanici, až si pořídí elektromobil. Tento přístup je ekonomicky nejefektivnější a v bytových domech nejčastější.'
+        q: 'Co když dnes potřebuje nabíjení jen několik lidí, ale časem jich bude víc?',
+        a: 'Právě proto je vhodné myslet na budoucí rozšíření už při návrhu. Dobře připravená infrastruktura umožní postupně připojovat další nabíjecí místa bez nutnosti složitých a nákladných úprav v budoucnu.'
       },
       {
-        q: 'Jak se řeší fakturace elektřiny za nabíjení v bytovém domě?',
-        a: 'Každá stanice má vlastní podružný elektroměr. Spotřeba se účtuje buď přes správce domu na základě odečtů, nebo automaticky přes aplikaci provozovatele systému. RFID karty nebo přihlášení přes smartphone umožňují přiřadit nabíjení konkrétnímu bytu nebo uživateli.'
+        q: 'Je pro instalaci potřeba souhlas SVJ nebo bytového družstva?',
+        a: 'Ve většině případů ano, protože se zásah týká společných částí domu nebo společných rozvodů. Přesný postup záleží na konkrétním typu objektu a způsobu řešení. Proto je vhodné mít připravený jasný technický návrh i přehled provozního modelu.'
       },
       {
-        q: 'Co jsou společné rozvody a proč se vyplatí investovat do nich hned?',
-        a: 'Jde o páteřní infrastrukturu pro celý dům — silnoproudé rozvody, datová kabeláž, hlavní rozvaděč. Investice do nich na začátku výrazně snižuje náklady na pozdější připojování dalších stanic. Přidání každé další stanice pak stojí zlomek ceny oproti situaci, kdy by se rozvody realizovaly individuálně.'
+        q: 'Co všechno je potřeba vyřešit před instalací?',
+        a: 'Nejdůležitější je ověřit technický stav objektu, dostupnou kapacitu, způsob napájení, umístění stanic a budoucí správu uživatelů. Součástí návrhu by mělo být také měření spotřeby, rozúčtování nákladů a možnost dalšího rozšíření.'
       }
     ]
   };
@@ -1043,7 +1138,7 @@ const ChargingStationCalculator = () => {
                           <div className="ml-3 flex-1">
                             <div className="text-slate-900 font-medium flex items-center">
                               Dynamické řízení výkonu
-                              <Tooltip text="Sleduje aktuální spotřebu elektřiny v domě a podle toho přizpůsobuje výkon nabíjení. Zabrání přetížení jističů, když jedete pračkou, troubou i nabíjíte auto zároveň." />
+                              <Tooltip text="Automaticky hlídá aktuální spotřebu budovy a podle volné kapacity plynule upravuje výkon nabíjení. Díky tomu se vozidla nabíjejí co nejrychleji, aniž by došlo k přetížení hlavního jističe nebo omezení provozu ostatních zařízení." />
                             </div>
                             <p className="text-sm text-slate-600 mt-1">
                               Zahrnuje plánování nabíjení a možnost nabíjení v nízkém tarifu
@@ -1068,7 +1163,7 @@ const ChargingStationCalculator = () => {
                           <div className="ml-3 flex-1">
                             <div className="text-slate-900 font-medium flex items-center">
                               Možnost nabíjení v nízkém tarifu
-                              <Tooltip text="Nízký tarif je levnější noční sazba elektřiny (typicky 22:00–6:00). Stanice automaticky spustí nabíjení, až tarif poklesne — takže nabíjíte levněji bez toho, abyste na to museli myslet." />
+                              <Tooltip text="Umožňuje spustit nabíjení pouze v době, kdy je aktivní HDO a běží levnější sazba elektřiny. Nabíjecí stanice je připojena na HDO přes svorkovnici a uživatel si může zvolit, že se vůz bude nabíjet jen tehdy, když je elektřina cenově výhodnější." />
                             </div>
                             {rodinnyData.smartFunctions.dynamicPower && (
                               <p className="text-sm text-slate-500 mt-1">Zahrnuto v dynamickém řízení</p>
@@ -1091,7 +1186,7 @@ const ChargingStationCalculator = () => {
                           <div className="ml-3 flex-1">
                             <div className="text-slate-900 font-medium flex items-center">
                               Plánování nabíjení
-                              <Tooltip text="Umožní nastavit, kdy se má auto začít nabíjet — třeba aby bylo ráno plně nabité, nebo aby nabíjení proběhlo v době nejlevnější elektřiny." />
+                              <Tooltip text="Umožňuje nastavit výkon nabíjení podle dnů a hodin. Díky tomu lze snadno přizpůsobit provoz nabíjecí stanice době, kdy je v objektu nižší spotřeba, levnější elektřina nebo menší zatížení celé sítě." />
                             </div>
                             {rodinnyData.smartFunctions.dynamicPower && (
                               <p className="text-sm text-slate-500 mt-1">Zahrnuto v dynamickém řízení</p>
@@ -1112,8 +1207,8 @@ const ChargingStationCalculator = () => {
                           />
                           <div className="ml-3 flex-1">
                             <div className="text-slate-900 font-medium flex items-center">
-                              RFID zabezpečení
-                              <Tooltip text="RFID karta nebo přívěsek funguje jako klíč ke stanici. Nabíjení se spustí až po přiložení karty — zabrání neoprávněnému použití sousedy nebo kolemjdoucími." />
+                              Zabezpečení PIN kódem nebo RFID kartou
+                              <Tooltip text="Umožňuje spustit nabíjení jen oprávněným uživatelům pomocí PIN kódu nebo RFID karty. Díky tomu máte kontrolu nad tím, kdo může stanici používat, a zabráníte neoprávněnému nabíjení." />
                             </div>
                           </div>
                         </label>
@@ -1321,12 +1416,12 @@ const ChargingStationCalculator = () => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                             </svg>
                             <span className="text-slate-900 font-medium flex items-center">
-                              Rozúčtování nákladů mezi uživatele
-                              <Tooltip text="Systém eviduje, kolik energie nabilo každé auto nebo každý zaměstnanec (přes RFID kartu nebo aplikaci). Náklady pak lze spravedlivě rozdělit nebo refakturovat konkrétním osobám." />
+                              Potřebuji přehledné rozúčtování spotřeby mezi uživatele
+                              <Tooltip text="Mějte přesný přehled o tom, kdo, kdy a kolik nabíjel. Nabíjecí stanice umožňuje snadné rozdělení nákladů mezi zaměstnance, firemní vozidla i další uživatele." />
                             </span>
                           </div>
                           <p className="text-sm text-slate-600">
-                            Sledování a rozúčtování spotřeby energie mezi různé uživatele
+                            Přesný přehled spotřeby a snadné rozdělení nákladů
                           </p>
                         </div>
                       </label>
@@ -1341,14 +1436,14 @@ const ChargingStationCalculator = () => {
                           </svg>
                         </div>
                         <label className="text-lg font-semibold text-slate-900">
-                          Stav přípravy objektu
+                          Jaký je aktuální stav elektropřípravy
                         </label>
                       </div>
                       <div className="grid gap-3">
                         {[
-                          { value: 'ready', label: 'Připraveno k instalaci', desc: 'Vše je připraveno' },
-                          { value: 'other', label: 'Jiné úpravy potřebné', desc: 'Drobné úpravy infrastruktury' },
-                          { value: 'capacity', label: 'Problém s kapacitou přípojky', desc: 'Nutné navýšení příkonu', tooltip: 'Přípojka = elektro přívod do budovy od distributora. Pokud je její kapacita (příkon) příliš malá, nestačí napájet nabíjecí stanice bez rizika výpadku. Řešením je navýšení příkonu — zpravidla na žádost u distributora elektřiny.' }
+                          { value: 'ready', label: 'Máme dostatečnou kapacitu a rezervovaný příkon' },
+                          { value: 'other', label: 'Nejsme si jistí, potřebujeme posouzení' },
+                          { value: 'capacity', label: 'Kapacita může být nedostatečná' }
                         ].map((opt) => (
                           <label
                             key={opt.value}
@@ -1576,11 +1671,11 @@ const ChargingStationCalculator = () => {
                       </div>
                       <div className="grid gap-3">
                         {[
-                          { value: '1', label: '1 stanice', desc: 'Pro pilotní testování' },
-                          { value: '2', label: '2 stanice', desc: 'Základní pokrytí' },
-                          { value: '3', label: '3 stanice', desc: 'Rozšířená nabídka' },
-                          { value: '5', label: '5 stanic', desc: 'Dobrá dostupnost' },
-                          { value: '10', label: '10 stanic', desc: 'Plné pokrytí' }
+                          { value: '1', label: '1 stanice' },
+                          { value: '2', label: '2 stanice' },
+                          { value: '3', label: '3 stanice' },
+                          { value: '5', label: '5 stanic' },
+                          { value: '10', label: '10 stanic' }
                         ].map((opt) => (
                           <label
                             key={opt.value}
@@ -1601,7 +1696,7 @@ const ChargingStationCalculator = () => {
                               />
                               <div className="ml-3">
                                 <div className="text-slate-900 font-medium">{opt.label}</div>
-                                <div className="text-sm text-slate-600">{opt.desc}</div>
+                                {opt.desc && <div className="text-sm text-slate-600">{opt.desc}</div>}
                               </div>
                             </div>
                           </label>
@@ -1609,30 +1704,49 @@ const ChargingStationCalculator = () => {
                       </div>
                     </div>
 
-                    {/* Napájení ze společných rozvodů */}
+                    {/* Napájení ze společných prostorů */}
                     <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-6 border border-orange-100">
-                      <label className="flex items-start p-4 rounded-xl bg-white/50 border-2 border-transparent hover:bg-white hover:shadow cursor-pointer transition-all">
-                        <input
-                          type="checkbox"
-                          checked={bytovyData.commonPower}
-                          onChange={(e) => setBytovyData({...bytovyData, commonPower: e.target.checked})}
-                          className="mt-1 w-5 h-5 text-orange-600 rounded"
-                        />
-                        <div className="ml-3 flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            <span className="text-slate-900 font-medium flex items-center">
-                              Napájení ze společných rozvodů
-                              <Tooltip text="Společné rozvody = páteřní elektro kabeláž vedená společnými prostorami domu (chodby, sklep). Investice do nich hned na začátku výrazně zlevní budoucí připojování každé další nabíjecí stanice." />
-                            </span>
-                          </div>
-                          <p className="text-sm text-slate-600">
-                            Připojení na společné elektrické rozvody bytového domu
-                          </p>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-orange-100 rounded-lg">
+                          <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
                         </div>
-                      </label>
+                        <label className="text-lg font-semibold text-slate-900">
+                          Napájení ze společných prostorů
+                        </label>
+                      </div>
+                      <p className="text-sm text-slate-600 mb-4">
+                        Budou nabíjecí stanice napájeny ze společných rozvodů objektu?
+                      </p>
+                      <div className="grid gap-3">
+                        {[
+                          { value: 'yes', label: 'Ano' },
+                          { value: 'no', label: 'Ne' },
+                          { value: 'unsure', label: 'Nevím, potřebuji poradit' }
+                        ].map((opt) => (
+                          <label
+                            key={opt.value}
+                            className={`flex items-center p-4 rounded-xl cursor-pointer transition-all ${
+                              bytovyData.commonPower === opt.value
+                                ? 'bg-white shadow-md border-2 border-orange-500'
+                                : 'bg-white/50 border-2 border-transparent hover:bg-white hover:shadow'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="commonPower"
+                              value={opt.value}
+                              checked={bytovyData.commonPower === opt.value}
+                              onChange={(e) => setBytovyData({...bytovyData, commonPower: e.target.value})}
+                              className="w-5 h-5 text-orange-600"
+                            />
+                            <span className="ml-3 text-slate-900 font-medium">
+                              {opt.label}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
@@ -1880,20 +1994,20 @@ const ChargingStationCalculator = () => {
                       {[
                         {
                           num: 1,
-                          title: 'Kontaktujeme vás do 24 hodin',
-                          desc: 'Náš specialista vás zkontaktuje a projedná detaily',
+                          title: 'Spojíme se s vámi do 24 hodin',
+                          desc: 'Krátce s vámi projdeme Vaši poptávku a doplníme vše potřebné.',
                           cls: 'bg-blue-600'
                         },
                         {
                           num: 2,
-                          title: 'Prohlídka místa instalace',
-                          desc: 'Domluvíme si termín pro obhlídku a přesné zaměření',
+                          title: 'Nabídneme prohlídku místa instalace',
+                          desc: 'Nabídneme Vám osobní prohlídku technikem, který ověří technický stav elektroinstalace a představí Vám možné varianty instalace.',
                           cls: 'bg-purple-600'
                         },
                         {
                           num: 3,
-                          title: 'Cenová nabídka na míru',
-                          desc: 'Obdržíte přesnou nabídku s termínem realizace',
+                          title: 'Zašleme Vám nabídku na míru',
+                          desc: 'Připravíme řešení přesně podle Vašich potřeb, včetně ceny a případného termínu realizace.',
                           cls: 'bg-green-600'
                         }
                       ].map((item) => (
@@ -1938,7 +2052,7 @@ const ChargingStationCalculator = () => {
                         installLocation: '',
                         approvalStatus: '',
                         stationCount: '',
-                        commonPower: false
+                        commonPower: ''
                       });
                       setLeadData({ email: '', phone: '', consentData: false, consentContact: false });
                     }}
