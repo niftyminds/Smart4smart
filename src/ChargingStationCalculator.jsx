@@ -139,25 +139,23 @@ const ChargingStationCalculator = () => {
       else if (rodinnyData.distance === '5-15') price = 10685;
       else if (rodinnyData.distance === '15+') price = 12823;
 
+      // Smart funkce - nová logika
       if (rodinnyData.smartFunctions.dynamicPower) {
+        // Dynamické řízení zahrnuje plánování + RFID
         price += 36366;
-        // RFID lze přidat i s dynamickým řízením
-        if (rodinnyData.smartFunctions.rfid) {
-          price += 4000;
+        // Nízký tarif lze přidat k dynamickému řízení
+        if (rodinnyData.smartFunctions.lowTariff) {
+          price += 2000;
         }
+      } else if (rodinnyData.smartFunctions.lowTariff) {
+        // Nízký tarif zahrnuje plánování + RFID
+        price += 30776;
+      } else if (rodinnyData.smartFunctions.planning || rodinnyData.smartFunctions.rfid) {
+        // Plánování nebo RFID = stejná cena (zahrnují se vzájemně)
+        price += 28776;
       } else {
-        const hasAnySmartFunction =
-          rodinnyData.smartFunctions.lowTariff ||
-          rodinnyData.smartFunctions.planning ||
-          rodinnyData.smartFunctions.rfid;
-
-        if (!hasAnySmartFunction) {
-          price += 15305;
-        } else {
-          if (rodinnyData.smartFunctions.lowTariff) price += 3000;
-          if (rodinnyData.smartFunctions.planning) price += 5000;
-          if (rodinnyData.smartFunctions.rfid) price += 4000;
-        }
+        // Základní stanice bez smart funkcí
+        price += 15305;
       }
     }
     else if (segment === 'firemni') {
@@ -202,56 +200,59 @@ const ChargingStationCalculator = () => {
     const items = [];
 
     if (segment === 'rodinny') {
-      // Vzdálenost od rozvodné skříně
+      // 1. Základní cena instalace
       if (rodinnyData.distance === '0-5') {
-        items.push({ description: 'Základní instalace (vzdálenost 0-5m)', price: 10004 });
+        items.push({ description: 'Základní cena instalace – vzdálenost od rozvaděče 0-5m', price: 10004 });
       } else if (rodinnyData.distance === '5-15') {
-        items.push({ description: 'Základní instalace (vzdálenost 5-15m)', price: 10685 });
+        items.push({ description: 'Základní cena instalace – vzdálenost od rozvaděče 5-15m', price: 10685 });
       } else if (rodinnyData.distance === '15+') {
-        items.push({ description: 'Základní instalace (vzdálenost 15+ m)', price: 12823 });
+        items.push({ description: 'Základní cena instalace – vzdálenost od rozvaděče 15+m', price: 12823 });
       }
 
-      // Smart funkce
+      // 2. Nabíjecí stanice dle zvolených parametrů
+      let stationPrice = 0;
+      let stationFeatures = [];
+
       if (rodinnyData.smartFunctions.dynamicPower) {
-        items.push({
-          description: 'Dynamické řízení výkonu (zahrnuje plánování a možnost nízkého tarifu)',
-          price: 36366
-        });
-        // RFID lze přidat i s dynamickým řízením
-        if (rodinnyData.smartFunctions.rfid) {
-          items.push({ description: 'RFID autorizace', price: 4000 });
-        }
-      } else {
-        const hasAnySmartFunction =
-          rodinnyData.smartFunctions.lowTariff ||
-          rodinnyData.smartFunctions.planning ||
-          rodinnyData.smartFunctions.rfid;
+        stationPrice = 36366;
+        stationFeatures.push('Dynamické řízení výkonu');
+        stationFeatures.push('Plánování nabíjení (zahrnuto)');
+        stationFeatures.push('Zabezpečení PIN kódem nebo RFID kartou (zahrnuto)');
 
-        if (!hasAnySmartFunction) {
-          items.push({ description: 'Základní nabíjecí stanice', price: 15305 });
-        } else {
-          if (rodinnyData.smartFunctions.lowTariff) {
-            items.push({ description: 'Možnost nabíjení v nízkém tarifu', price: 3000 });
-          }
-          if (rodinnyData.smartFunctions.planning) {
-            items.push({ description: 'Plánování nabíjení', price: 5000 });
-          }
-          if (rodinnyData.smartFunctions.rfid) {
-            items.push({ description: 'RFID autorizace', price: 4000 });
-          }
+        if (rodinnyData.smartFunctions.lowTariff) {
+          stationPrice += 2000;
+          stationFeatures.push('Možnost automatického nabíjení jen v nízkém tarifu');
         }
+      } else if (rodinnyData.smartFunctions.lowTariff) {
+        stationPrice = 30776;
+        stationFeatures.push('Možnost automatického nabíjení jen v nízkém tarifu');
+        stationFeatures.push('Plánování nabíjení (zahrnuto)');
+        stationFeatures.push('Zabezpečení PIN kódem nebo RFID kartou (zahrnuto)');
+      } else if (rodinnyData.smartFunctions.planning || rodinnyData.smartFunctions.rfid) {
+        stationPrice = 28776;
+        stationFeatures.push('Plánování nabíjení');
+        stationFeatures.push('Zabezpečení PIN kódem nebo RFID kartou');
+      } else {
+        stationPrice = 15305;
+        stationFeatures.push('Základní nabíjecí stanice');
       }
+
+      items.push({
+        description: 'Nabíjecí stanice dle Vámi zvolených parametrů',
+        price: stationPrice,
+        features: stationFeatures
+      });
     }
     else if (segment === 'firemni') {
-      // Počet aut
+      // AC nabíjecí stanice
       if (firemniData.carCount === '1-2') {
-        items.push({ description: 'Nabíjení pro 1-2 auta', price: 39000 });
+        items.push({ description: 'AC nabíjecí stanice pro 1-2 vozidla', price: 39000 });
       } else if (firemniData.carCount === '3-5') {
-        items.push({ description: 'Nabíjení pro 3-5 aut', price: 156000 });
+        items.push({ description: 'AC nabíjecí stanice pro 3-5 vozidel', price: 156000 });
       } else if (firemniData.carCount === '6-12') {
-        items.push({ description: 'Nabíjení pro 6-12 aut', price: 390000 });
+        items.push({ description: 'AC nabíjecí stanice pro 6-12 vozidel', price: 390000 });
       } else if (firemniData.carCount === '12+') {
-        items.push({ description: 'Nabíjení pro více než 12 aut', price: 546000 });
+        items.push({ description: 'AC nabíjecí stanice pro více než 12 vozidel', price: 546000 });
       }
 
       // DC stanice
@@ -291,9 +292,9 @@ const ChargingStationCalculator = () => {
         items.push({ description: '10 nabíjecích stanic', price: 737000 });
       }
 
-      // Společné rozvody
+      // Napojení na společné rozvody
       if (bytovyData.commonPower === 'yes') {
-        items.push({ description: 'Společné rozvody v domě', price: 9823 });
+        items.push({ description: 'Zajištění napojení na společné rozvody v domě', price: 9823 });
       }
     }
 
@@ -1128,7 +1129,11 @@ const ChargingStationCalculator = () => {
                       </label>
                       <p className="text-sm text-slate-600 mb-4">
                         {rodinnyData.smartFunctions.dynamicPower
-                          ? '✓ Dynamické řízení zahrnuje plánování nabíjení a možnost nabíjení v nízkém tarifu'
+                          ? '✓ Dynamické řízení zahrnuje plánování nabíjení a zabezpečení PIN/RFID'
+                          : rodinnyData.smartFunctions.lowTariff
+                          ? '✓ Automatické nabíjení v nízkém tarifu zahrnuje plánování a zabezpečení PIN/RFID'
+                          : (rodinnyData.smartFunctions.planning || rodinnyData.smartFunctions.rfid)
+                          ? '✓ Plánování a zabezpečení PIN/RFID se vzájemně zahrnují'
                           : 'Bez výběru smart funkce se použije základní stanice'}
                       </p>
                       <div className="space-y-3">
@@ -1145,46 +1150,49 @@ const ChargingStationCalculator = () => {
                               <Tooltip text="Automaticky hlídá aktuální spotřebu budovy a podle volné kapacity plynule upravuje výkon nabíjení. Díky tomu se vozidla nabíjejí co nejrychleji, aniž by došlo k přetížení hlavního jističe nebo omezení provozu ostatních zařízení." />
                             </div>
                             <p className="text-sm text-slate-600 mt-1">
-                              Zahrnuje plánování nabíjení a možnost nabíjení v nízkém tarifu
+                              Zahrnuje plánování nabíjení a zabezpečení PIN kódem nebo RFID kartou
                             </p>
                           </div>
                         </label>
 
                         <label className={`flex items-start p-4 rounded-xl cursor-pointer transition-all ${
-                          rodinnyData.smartFunctions.dynamicPower
-                            ? 'opacity-50 cursor-not-allowed bg-slate-50'
-                            : rodinnyData.smartFunctions.lowTariff
+                          rodinnyData.smartFunctions.lowTariff
                             ? 'bg-white shadow-md border-2 border-green-500'
                             : 'bg-white/50 border-2 border-transparent hover:bg-white hover:shadow'
                         }`}>
                           <input
                             type="checkbox"
                             checked={rodinnyData.smartFunctions.lowTariff}
-                            onChange={() => !rodinnyData.smartFunctions.dynamicPower && handleSmartFunctionToggle('lowTariff')}
-                            disabled={rodinnyData.smartFunctions.dynamicPower}
+                            onChange={() => handleSmartFunctionToggle('lowTariff')}
                             className="mt-1 w-5 h-5 text-green-600 rounded"
                           />
                           <div className="ml-3 flex-1">
                             <div className="text-slate-900 font-medium flex items-center">
-                              Možnost nabíjení v nízkém tarifu
+                              Možnost automatického nabíjení jen v nízkém tarifu
                               <Tooltip text="Umožňuje spustit nabíjení pouze v době, kdy je aktivní HDO a běží levnější sazba elektřiny. Nabíjecí stanice je připojena na HDO přes svorkovnici a uživatel si může zvolit, že se vůz bude nabíjet jen tehdy, když je elektřina cenově výhodnější." />
                             </div>
                             {rodinnyData.smartFunctions.dynamicPower && (
-                              <p className="text-sm text-slate-500 mt-1">Zahrnuto v dynamickém řízení</p>
+                              <p className="text-sm text-slate-500 mt-1">Přidává se k dynamickému řízení (+2.000 Kč)</p>
                             )}
                           </div>
                         </label>
 
                         <label className={`flex items-start p-4 rounded-xl cursor-pointer transition-all ${
-                          rodinnyData.smartFunctions.dynamicPower
+                          rodinnyData.smartFunctions.dynamicPower || rodinnyData.smartFunctions.lowTariff || rodinnyData.smartFunctions.rfid
                             ? 'opacity-50 cursor-not-allowed bg-slate-50'
+                            : rodinnyData.smartFunctions.planning
+                            ? 'bg-white shadow-md border-2 border-blue-500'
                             : 'bg-white/50 border-2 border-transparent hover:bg-white hover:shadow'
                         }`}>
                           <input
                             type="checkbox"
                             checked={rodinnyData.smartFunctions.planning}
-                            onChange={() => !rodinnyData.smartFunctions.dynamicPower && handleSmartFunctionToggle('planning')}
-                            disabled={rodinnyData.smartFunctions.dynamicPower}
+                            onChange={() => {
+                              if (!rodinnyData.smartFunctions.dynamicPower && !rodinnyData.smartFunctions.lowTariff && !rodinnyData.smartFunctions.rfid) {
+                                handleSmartFunctionToggle('planning');
+                              }
+                            }}
+                            disabled={rodinnyData.smartFunctions.dynamicPower || rodinnyData.smartFunctions.lowTariff || rodinnyData.smartFunctions.rfid}
                             className="mt-1 w-5 h-5 text-blue-600 rounded"
                           />
                           <div className="ml-3 flex-1">
@@ -1195,18 +1203,31 @@ const ChargingStationCalculator = () => {
                             {rodinnyData.smartFunctions.dynamicPower && (
                               <p className="text-sm text-slate-500 mt-1">Zahrnuto v dynamickém řízení</p>
                             )}
+                            {rodinnyData.smartFunctions.lowTariff && !rodinnyData.smartFunctions.dynamicPower && (
+                              <p className="text-sm text-slate-500 mt-1">Zahrnuto v automatickém nabíjení v nízkém tarifu</p>
+                            )}
+                            {rodinnyData.smartFunctions.rfid && !rodinnyData.smartFunctions.dynamicPower && !rodinnyData.smartFunctions.lowTariff && (
+                              <p className="text-sm text-slate-500 mt-1">Zahrnuto v zabezpečení PIN/RFID (stejná cena)</p>
+                            )}
                           </div>
                         </label>
 
                         <label className={`flex items-start p-4 rounded-xl cursor-pointer transition-all ${
-                          rodinnyData.smartFunctions.rfid
+                          rodinnyData.smartFunctions.dynamicPower || rodinnyData.smartFunctions.lowTariff || rodinnyData.smartFunctions.planning
+                            ? 'opacity-50 cursor-not-allowed bg-slate-50'
+                            : rodinnyData.smartFunctions.rfid
                             ? 'bg-white shadow-md border-2 border-blue-500'
                             : 'bg-white/50 border-2 border-transparent hover:bg-white hover:shadow'
                         }`}>
                           <input
                             type="checkbox"
                             checked={rodinnyData.smartFunctions.rfid}
-                            onChange={() => handleSmartFunctionToggle('rfid')}
+                            onChange={() => {
+                              if (!rodinnyData.smartFunctions.dynamicPower && !rodinnyData.smartFunctions.lowTariff && !rodinnyData.smartFunctions.planning) {
+                                handleSmartFunctionToggle('rfid');
+                              }
+                            }}
+                            disabled={rodinnyData.smartFunctions.dynamicPower || rodinnyData.smartFunctions.lowTariff || rodinnyData.smartFunctions.planning}
                             className="mt-1 w-5 h-5 text-blue-600 rounded"
                           />
                           <div className="ml-3 flex-1">
@@ -1214,6 +1235,15 @@ const ChargingStationCalculator = () => {
                               Zabezpečení PIN kódem nebo RFID kartou
                               <Tooltip text="Umožňuje spustit nabíjení jen oprávněným uživatelům pomocí PIN kódu nebo RFID karty. Díky tomu máte kontrolu nad tím, kdo může stanici používat, a zabráníte neoprávněnému nabíjení." />
                             </div>
+                            {rodinnyData.smartFunctions.dynamicPower && (
+                              <p className="text-sm text-slate-500 mt-1">Zahrnuto v dynamickém řízení</p>
+                            )}
+                            {rodinnyData.smartFunctions.lowTariff && !rodinnyData.smartFunctions.dynamicPower && (
+                              <p className="text-sm text-slate-500 mt-1">Zahrnuto v automatickém nabíjení v nízkém tarifu</p>
+                            )}
+                            {rodinnyData.smartFunctions.planning && !rodinnyData.smartFunctions.dynamicPower && !rodinnyData.smartFunctions.lowTariff && (
+                              <p className="text-sm text-slate-500 mt-1">Zahrnuto v plánování (stejná cena)</p>
+                            )}
                           </div>
                         </label>
                       </div>
@@ -1924,18 +1954,32 @@ const ChargingStationCalculator = () => {
                       {getPriceBreakdown().map((item, index) => (
                         <div
                           key={index}
-                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 p-4 bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl border border-slate-200 hover:shadow-md transition-shadow"
+                          className="p-4 bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl border border-slate-200 hover:shadow-md transition-shadow"
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
-                            <span className="text-slate-700 font-medium text-sm">{item.description}</span>
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0"></div>
+                                <span className="text-slate-700 font-medium text-sm">{item.description}</span>
+                              </div>
+                              {item.features && item.features.length > 0 && (
+                                <div className="ml-5 space-y-1">
+                                  {item.features.map((feature, fidx) => (
+                                    <div key={fidx} className="flex items-center gap-2">
+                                      <span className="text-slate-500 text-xs">•</span>
+                                      <span className="text-slate-600 text-xs">{feature}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-slate-900 font-bold whitespace-nowrap text-sm pl-5 sm:pl-0 sm:mt-0">
+                              {item.price === 0
+                                ? <span className="text-green-600">zahrnuto</span>
+                                : `${formatPrice(Math.round(item.price * 0.95))} – ${formatPrice(Math.round(item.price * 1.05))} Kč`
+                              }
+                            </span>
                           </div>
-                          <span className="text-slate-900 font-bold sm:whitespace-nowrap sm:ml-4 text-sm pl-5 sm:pl-0">
-                            {item.price === 0
-                              ? <span className="text-green-600">zahrnuto</span>
-                              : `${formatPrice(Math.round(item.price * 0.95))} – ${formatPrice(Math.round(item.price * 1.05))} Kč`
-                            }
-                          </span>
                         </div>
                       ))}
 
