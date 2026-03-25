@@ -1877,14 +1877,21 @@ const ChargingStationCalculator = () => {
                         Telefonní číslo *
                       </label>
                       <div className="flex gap-2">
-                        <select
-                          value={leadData.phoneCountry}
-                          onChange={(e) => setLeadData({...leadData, phoneCountry: e.target.value})}
-                          className="px-3 py-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg bg-white cursor-pointer flex-shrink-0"
-                        >
-                          <option value="+420">🇨🇿 +420</option>
-                          <option value="+421">🇸🇰 +421</option>
-                        </select>
+                        <div className="relative flex-shrink-0">
+                          <select
+                            value={leadData.phoneCountry}
+                            onChange={(e) => setLeadData({...leadData, phoneCountry: e.target.value})}
+                            className="appearance-none pl-3 pr-10 py-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg bg-white cursor-pointer"
+                          >
+                            <option value="+420">🇨🇿 +420</option>
+                            <option value="+421">🇸🇰 +421</option>
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </div>
                         <input
                           type="tel"
                           required
