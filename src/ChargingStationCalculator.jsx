@@ -1866,7 +1866,7 @@ const ChargingStationCalculator = () => {
                         type="email"
                         required
                         value={leadData.email}
-                        onChange={(e) => setLeadData({...leadData, email: e.target.value})}
+                        onChange={(e) => setLeadData(prev => ({...prev, email: e.target.value}))}
                         className="w-full px-5 py-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg"
                         placeholder="vas@email.cz"
                       />
@@ -1880,7 +1880,7 @@ const ChargingStationCalculator = () => {
                         <div className="relative flex-shrink-0">
                           <select
                             value={leadData.phoneCountry}
-                            onChange={(e) => setLeadData({...leadData, phoneCountry: e.target.value})}
+                            onChange={(e) => setLeadData(prev => ({...prev, phoneCountry: e.target.value}))}
                             className="appearance-none pl-3 pr-10 py-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg bg-white cursor-pointer"
                           >
                             <option value="+420">🇨🇿 +420</option>
@@ -1896,7 +1896,7 @@ const ChargingStationCalculator = () => {
                           type="tel"
                           required
                           value={leadData.phoneNumber}
-                          onChange={(e) => { setLeadData({...leadData, phoneNumber: e.target.value}); setFormError(null); }}
+                          onChange={(e) => { setLeadData(prev => ({...prev, phoneNumber: e.target.value})); setFormError(null); }}
                           className="flex-1 px-5 py-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg"
                           placeholder="123 456 789"
                         />
@@ -1913,7 +1913,7 @@ const ChargingStationCalculator = () => {
                             type="checkbox"
                             required
                             checked={leadData.consentData}
-                            onChange={(e) => setLeadData({...leadData, consentData: e.target.checked})}
+                            onChange={(e) => setLeadData(prev => ({...prev, consentData: e.target.checked}))}
                             className="sr-only"
                           />
                           <div className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-colors ${leadData.consentData ? 'bg-blue-600 border-blue-600' : 'border-slate-300 bg-white'}`}>
