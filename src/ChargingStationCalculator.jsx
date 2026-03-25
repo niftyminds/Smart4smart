@@ -31,6 +31,7 @@ const ChargingStationCalculator = () => {
 
   // Flow control
   const [step, setStep] = useState('segment');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [segment, setSegment] = useState('');
   const calculatorRef = useRef(null);
 
@@ -350,7 +351,7 @@ const ChargingStationCalculator = () => {
     }
   };
 
-  const handleLeadSubmit = (e) => {
+  const handleLeadSubmit = async (e) => {
     e.preventDefault();
     const finalPrice = calculatePrice();
     const fullLeadData = {
@@ -362,7 +363,6 @@ const ChargingStationCalculator = () => {
                      segment === 'firemni' ? firemniData :
                      bytovyData
     };
-    console.log('Lead data:', fullLeadData);
 
     // GTM Event: Lead Conversion
     pushToDataLayer('generate_lead', {
@@ -375,6 +375,20 @@ const ChargingStationCalculator = () => {
       email: leadData.email,
       phone: leadData.phone
     });
+
+    setIsSubmitting(true);
+    try {
+      await fetch('/api/submit-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fullLeadData),
+      });
+    } catch {
+      // Backend failure is handled server-side (error email sent)
+      // User still proceeds to results
+    } finally {
+      setIsSubmitting(false);
+    }
 
     setStep('result');
     setTimeout(() => calculatorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
@@ -1880,14 +1894,26 @@ const ChargingStationCalculator = () => {
 
                     <button
                       type="submit"
-                      disabled={!leadData.consentData}
-                      className={`w-full font-bold py-5 px-8 rounded-2xl transition-all duration-300 text-lg ${leadData.consentData ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-xl hover:shadow-2xl transform hover:scale-105' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                      disabled={!leadData.consentData || isSubmitting}
+                      className={`w-full font-bold py-5 px-8 rounded-2xl transition-all duration-300 text-lg ${leadData.consentData && !isSubmitting ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white shadow-xl hover:shadow-2xl transform hover:scale-105' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
                     >
                       <span className="flex items-center justify-center gap-2">
-                        Zobrazit cenový odhad
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
+                        {isSubmitting ? (
+                          <>
+                            <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                            Zpracovávám...
+                          </>
+                        ) : (
+                          <>
+                            Zobrazit cenový odhad
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                          </>
+                        )}
                       </span>
                     </button>
 

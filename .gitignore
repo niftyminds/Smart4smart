@@ -27,3 +27,17 @@ dist-ssr
 Fotky/
 *.docx
 *.pdf
+
+# Environment variables - never commit secrets
+.env
+.env.local
+.env.*.local
+
+# Google Service Account credentials - never commit
+*.json
+!package.json
+!package-lock.json
+!tsconfig*.json
+!vite.config.json
+.vercel
+.env*.local
