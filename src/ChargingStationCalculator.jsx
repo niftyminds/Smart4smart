@@ -34,6 +34,7 @@ const ChargingStationCalculator = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [segment, setSegment] = useState('');
   const calculatorRef = useRef(null);
+  const contactFormStarted = useRef(false);
 
   const navigateTo = (target) => {
     setPage(target);
@@ -342,7 +343,7 @@ const ChargingStationCalculator = () => {
   const handleContinueToLead = () => {
     if (isQuestionnaireComplete()) {
       // GTM Event: Begin Checkout (user proceeds to lead form)
-      pushToDataLayer('begin_checkout', {
+      pushToDataLayer('complete_questionnaire', {
         segment: segment,
         estimated_price: calculatePrice(),
         currency: 'CZK'
@@ -385,7 +386,11 @@ const ChargingStationCalculator = () => {
       price_range: getPriceRange(finalPrice),
       currency: 'CZK',
       email: leadData.email,
-      phone: combinedPhone
+      phone: combinedPhone,
+      user_data: {
+        email: leadData.email.toLowerCase().trim(),
+        phone: combinedPhone.replace('+', ''), // Meta format: 420123456789
+      }
     });
 
     setIsSubmitting(true);
@@ -1867,6 +1872,16 @@ const ChargingStationCalculator = () => {
                         required
                         value={leadData.email}
                         onChange={(e) => setLeadData(prev => ({...prev, email: e.target.value}))}
+                        onFocus={() => {
+                          if (!contactFormStarted.current) {
+                            contactFormStarted.current = true;
+                            pushToDataLayer('start_contact_form', {
+                              segment: segment,
+                              estimated_price: calculatePrice(),
+                              currency: 'CZK'
+                            });
+                          }
+                        }}
                         className="w-full px-5 py-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg"
                         placeholder="vas@email.cz"
                       />

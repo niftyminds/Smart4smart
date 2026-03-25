@@ -260,7 +260,7 @@ async function appendToSheet(data) {
 
   const sheets = google.sheets({ version: 'v4', auth });
   const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
-  const sheetName = process.env.GOOGLE_SHEET_NAME || 'Smart4Smart Leads';
+  const sheetName = process.env.GOOGLE_SHEET_NAME || 'VŠECHNY TYPY';
 
   await ensureHeaders(sheets, spreadsheetId, sheetName, HEADERS, 4);
 
