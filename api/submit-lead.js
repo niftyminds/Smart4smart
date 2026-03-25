@@ -3,6 +3,13 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+const HEADERS = [
+  'Datum', 'Segment', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
+  'Vzdálenost od rozvaděče', 'Smart funkce',
+  'Počet vozů', 'Výkon DC stanice (kW)', 'Stav přípravy', 'Rozúčtování nákladů',
+  'Počet stanic', 'Společný výkon k dispozici',
+];
+
 // --- Retry helper ---
 async function withRetry(fn, label, maxAttempts = 3) {
   let lastError;
@@ -20,8 +27,8 @@ async function withRetry(fn, label, maxAttempts = 3) {
   throw new Error(`${label} failed after ${maxAttempts} attempts: ${lastError.message}`);
 }
 
-// --- Questionnaire → human readable ---
-function formatQuestionnaire(segment, questionnaire) {
+// --- Questionnaire → human readable (for emails) ---
+function formatQuestionnaireForEmail(segment, questionnaire) {
   if (!questionnaire) return 'N/A';
 
   if (segment === 'rodinny') {
@@ -31,9 +38,7 @@ function formatQuestionnaire(segment, questionnaire) {
       sf.lowTariff && 'Nabíjení v nízkém tarifu',
       sf.planning && 'Plánování nabíjení',
       sf.rfid && 'RFID zabezpečení',
-    ]
-      .filter(Boolean)
-      .join(', ');
+    ].filter(Boolean).join(', ');
     return [
       `Vzdálenost od rozvaděče: ${questionnaire.distance || 'N/A'}m`,
       `Smart funkce: ${smartList || 'žádné'}`,
@@ -45,14 +50,14 @@ function formatQuestionnaire(segment, questionnaire) {
       `Počet vozů: ${questionnaire.carCount || 'N/A'}`,
       `Výkon DC stanice: ${questionnaire.dcStation || 'N/A'} kW`,
       `Stav přípravy: ${questionnaire.preparationState || 'N/A'}`,
-      `Rozúčtování nákladů: ${questionnaire.costAccounting ? 'ano' : 'ne'}`,
+      `Rozúčtování nákladů: ${questionnaire.costAccounting ? 'Ano' : 'Ne'}`,
     ].join(' | ');
   }
 
   if (segment === 'bytovy') {
     return [
       `Počet stanic: ${questionnaire.stationCount || 'N/A'}`,
-      `Společný výkon k dispozici: ${questionnaire.commonPower === 'yes' ? 'ano' : 'ne'}`,
+      `Společný výkon k dispozici: ${questionnaire.commonPower === 'yes' ? 'Ano' : 'Ne'}`,
     ].join(' | ');
   }
 
@@ -65,6 +70,57 @@ function segmentLabel(segment) {
   if (segment === 'firemni') return 'Firemní prostředí';
   if (segment === 'bytovy') return 'Bytový dům';
   return segment;
+}
+
+// --- Ensure header row exists and column E is formatted as currency ---
+async function ensureHeaders(sheets, spreadsheetId, sheetName) {
+  const getRes = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!1:1`,
+  });
+  const existing = getRes.data.values?.[0] || [];
+
+  if (JSON.stringify(existing) === JSON.stringify(HEADERS)) return;
+
+  // Write/update headers
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${sheetName}!A1`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [HEADERS] },
+  });
+
+  // Format column E (index 4) as currency with no decimals
+  const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
+  const sheetObj = spreadsheet.data.sheets.find((s) => s.properties.title === sheetName);
+  if (!sheetObj) return;
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          repeatCell: {
+            range: {
+              sheetId: sheetObj.properties.sheetId,
+              startRowIndex: 1, // skip header row
+              startColumnIndex: 4, // column E
+              endColumnIndex: 5,
+            },
+            cell: {
+              userEnteredFormat: {
+                numberFormat: {
+                  type: 'NUMBER',
+                  pattern: '#,##0 "Kč"',
+                },
+              },
+            },
+            fields: 'userEnteredFormat.numberFormat',
+          },
+        },
+      ],
+    },
+  });
 }
 
 // --- Append row to Google Sheets ---
@@ -81,18 +137,41 @@ async function appendToSheet(data) {
   const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
   const sheetName = process.env.GOOGLE_SHEET_NAME || 'Smart4smart Leads';
 
+  await ensureHeaders(sheets, spreadsheetId, sheetName);
+
+  const q = data.questionnaire || {};
+  const sf = q.smartFunctions || {};
+
+  const smartFunctions = [
+    sf.dynamicPower && 'Dynamické řízení výkonu + RFID',
+    sf.lowTariff && 'Nabíjení v nízkém tarifu',
+    sf.planning && 'Plánování nabíjení',
+    sf.rfid && 'RFID zabezpečení',
+  ].filter(Boolean).join(', ');
+
+  const isRodinny = data.segment === 'rodinny';
+  const isFiremni = data.segment === 'firemni';
+  const isBytovy = data.segment === 'bytovy';
+
   const row = [
-    new Date().toLocaleString('cs-CZ', { timeZone: 'Europe/Prague' }),
-    segmentLabel(data.segment),
-    data.email,
-    data.phone,
-    data.estimatedPrice ? `${data.estimatedPrice.toLocaleString('cs-CZ')} Kč` : 'N/A',
-    formatQuestionnaire(data.segment, data.questionnaire),
+    new Date().toLocaleString('cs-CZ', { timeZone: 'Europe/Prague' }), // A: Datum
+    segmentLabel(data.segment),                                          // B: Segment
+    data.email,                                                          // C: Email
+    data.phone,                                                          // D: Telefon
+    data.estimatedPrice || '',                                           // E: Cena (number)
+    isRodinny ? (q.distance || '') : '',                                 // F: Vzdálenost od rozvaděče
+    isRodinny ? (smartFunctions || '') : '',                             // G: Smart funkce
+    isFiremni ? (q.carCount || '') : '',                                 // H: Počet vozů
+    isFiremni ? (q.dcStation || '') : '',                                // I: Výkon DC stanice
+    isFiremni ? (q.preparationState || '') : '',                         // J: Stav přípravy
+    isFiremni ? (q.costAccounting ? 'Ano' : 'Ne') : '',                  // K: Rozúčtování nákladů
+    isBytovy ? (parseInt(q.stationCount) || '') : '',                    // L: Počet stanic
+    isBytovy ? (q.commonPower === 'yes' ? 'Ano' : 'Ne') : '',            // M: Společný výkon
   ];
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: `${sheetName}!A:F`,
+    range: `${sheetName}!A:M`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
@@ -102,9 +181,9 @@ async function appendToSheet(data) {
 async function sendNotificationEmail(data) {
   const sheetUrl = process.env.GOOGLE_SHEET_URL || '#';
   const segName = segmentLabel(data.segment);
-  const questDetail = formatQuestionnaire(data.segment, data.questionnaire);
+  const questDetail = formatQuestionnaireForEmail(data.segment, data.questionnaire);
   const priceFormatted = data.estimatedPrice
-    ? `${data.estimatedPrice.toLocaleString('cs-CZ')} Kč`
+    ? `${Math.round(data.estimatedPrice).toLocaleString('cs-CZ')} Kč`
     : 'N/A';
 
   await resend.emails.send({
@@ -159,7 +238,7 @@ async function sendNotificationEmail(data) {
 // --- Send error email ---
 async function sendErrorEmail(data, failedStep, errorMessage) {
   const priceFormatted = data?.estimatedPrice
-    ? `${data.estimatedPrice.toLocaleString('cs-CZ')} Kč`
+    ? `${Math.round(data.estimatedPrice).toLocaleString('cs-CZ')} Kč`
     : 'N/A';
 
   await resend.emails.send({
@@ -226,14 +305,15 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields: email, phone, segment' });
   }
 
-  const errors = [];
+  // Phone validation: +420 or +421 followed by exactly 9 digits
+  if (!/^\+42[01]\d{9}$/.test(data.phone)) {
+    return res.status(400).json({ error: 'invalid_phone' });
+  }
 
   // 1. Append to Google Sheets (with retry)
   try {
     await withRetry(() => appendToSheet(data), 'Google Sheets');
   } catch (sheetsError) {
-    errors.push({ step: 'Google Sheets', message: sheetsError.message });
-    // Send error email (best-effort)
     try {
       await sendErrorEmail(data, 'Google Sheets', sheetsError.message);
     } catch (emailErr) {
@@ -246,14 +326,11 @@ export default async function handler(req, res) {
   try {
     await withRetry(() => sendNotificationEmail(data), 'Resend email');
   } catch (emailError) {
-    errors.push({ step: 'Resend email', message: emailError.message });
-    // Send error email (best-effort)
     try {
       await sendErrorEmail(data, 'Resend notifikační email', emailError.message);
     } catch (errEmailErr) {
       console.error('Failed to send error email:', errEmailErr.message);
     }
-    // Sheet write succeeded, so return 207 (partial success)
     return res.status(207).json({
       warning: 'Lead saved to sheet, but notification email failed',
       details: emailError.message,

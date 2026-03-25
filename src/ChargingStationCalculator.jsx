@@ -124,10 +124,12 @@ const ChargingStationCalculator = () => {
 
   const [leadData, setLeadData] = useState({
     email: '',
-    phone: '',
+    phoneCountry: '+420',
+    phoneNumber: '',
     consentData: false,
     consentContact: false
   });
+  const [formError, setFormError] = useState(null);
 
   const [basePrice, setBasePrice] = useState(0);
 
@@ -353,11 +355,21 @@ const ChargingStationCalculator = () => {
 
   const handleLeadSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate phone: exactly 9 digits after stripping spaces and dashes
+    const normalizedPhone = leadData.phoneNumber.replace(/[\s\-]/g, '');
+    if (!/^\d{9}$/.test(normalizedPhone)) {
+      setFormError('Zadejte platné telefonní číslo (9 číslic, např. 123 456 789)');
+      return;
+    }
+    setFormError(null);
+
+    const combinedPhone = `${leadData.phoneCountry}${normalizedPhone}`;
     const finalPrice = calculatePrice();
     const fullLeadData = {
       segment,
       email: leadData.email,
-      phone: leadData.phone,
+      phone: combinedPhone,
       estimatedPrice: finalPrice,
       questionnaire: segment === 'rodinny' ? rodinnyData :
                      segment === 'firemni' ? firemniData :
@@ -373,16 +385,24 @@ const ChargingStationCalculator = () => {
       price_range: getPriceRange(finalPrice),
       currency: 'CZK',
       email: leadData.email,
-      phone: leadData.phone
+      phone: combinedPhone
     });
 
     setIsSubmitting(true);
     try {
-      await fetch('/api/submit-lead', {
+      const res = await fetch('/api/submit-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(fullLeadData),
       });
+      if (res.status === 400) {
+        const body = await res.json();
+        if (body.error === 'invalid_phone') {
+          setFormError('Zadejte platné telefonní číslo');
+          setIsSubmitting(false);
+          return;
+        }
+      }
     } catch {
       // Backend failure is handled server-side (error email sent)
       // User still proceeds to results
@@ -1856,14 +1876,27 @@ const ChargingStationCalculator = () => {
                       <label className="block text-sm font-semibold text-slate-700 mb-2">
                         Telefonní číslo *
                       </label>
-                      <input
-                        type="tel"
-                        required
-                        value={leadData.phone}
-                        onChange={(e) => setLeadData({...leadData, phone: e.target.value})}
-                        className="w-full px-5 py-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg"
-                        placeholder="+420 123 456 789"
-                      />
+                      <div className="flex gap-2">
+                        <select
+                          value={leadData.phoneCountry}
+                          onChange={(e) => setLeadData({...leadData, phoneCountry: e.target.value})}
+                          className="px-3 py-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg bg-white cursor-pointer flex-shrink-0"
+                        >
+                          <option value="+420">🇨🇿 +420</option>
+                          <option value="+421">🇸🇰 +421</option>
+                        </select>
+                        <input
+                          type="tel"
+                          required
+                          value={leadData.phoneNumber}
+                          onChange={(e) => { setLeadData({...leadData, phoneNumber: e.target.value}); setFormError(null); }}
+                          className="flex-1 px-5 py-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg"
+                          placeholder="123 456 789"
+                        />
+                      </div>
+                      {formError && (
+                        <p className="mt-2 text-sm text-red-600">{formError}</p>
+                      )}
                     </div>
 
                     <div className="space-y-3">
