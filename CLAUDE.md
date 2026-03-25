@@ -9,14 +9,18 @@ Marketingová kalkulačka pro Smart4smart, která pomáhá potenciálním zákaz
 - **Google Sheets**: googleapis npm package, Service Account auth
 - **Email**: Resend (free plán, odesílá z `onboarding@resend.dev`)
 - **Deploy**: GitHub → Vercel (auto-deploy na push do `main`)
-- **Analytics**: Google Tag Manager (pushToDataLayer)
+- **Analytics**: Google Tag Manager (pushToDataLayer) + Google Consent Mode v2
+- **Cookie consent**: custom `CookieConsent.jsx` — localStorage, gtag consent update
 
 ## Architektura
 Čistě frontendové SPA + jedna serverless funkce:
 
 ```
 src/ChargingStationCalculator.jsx   # celá aplikace (jeden velký komponent)
+src/CookieConsent.jsx               # cookie consent banner + preferences modal
+src/main.jsx                        # root render
 api/submit-lead.js                  # Vercel serverless funkce
+index.html                          # GTM Consent Mode v2 defaults + GTM script tag
 ```
 
 Lead flow: formulář → POST `/api/submit-lead` → Google Sheets + Resend email → výsledek
@@ -111,3 +115,35 @@ git push origin main   # Vercel auto-deployuje
 ```
 
 Po deployi zkontroluj Vercel logy pokud něco nefunguje: `vercel logs`
+
+## Analytics & GTM
+
+### GTM Consent Mode v2
+Consent Mode defaults jsou nastaveny v `index.html` **před** GTM scriptem:
+- `security_storage`, `functionality_storage` → vždy `granted`
+- ostatní signály → default `denied`, update po rozhodnutí uživatele
+
+**Důležité**: V `index.html` (řádky s GTM scriptem) nahradit `GTM-XXXXXXX` skutečným GTM container ID.
+
+### Cookie consent (`src/CookieConsent.jsx`)
+- Uložení do `localStorage` pod klíčem `cookie_consent` (`{ analytics, ads, personalization }`)
+- Po rozhodnutí volá `gtag('consent', 'update', {...})` — nebo fallback přes `window.dataLayer.push`
+- Kategorie: Nezbytné (vždy ON) / Analytické / Reklamní / Personalizační
+
+### GTM DataLayer funnel
+```
+view_calculator        ← kalkulačka je viditelná (IntersectionObserver)
+select_segment         ← uživatel vybral segment
+complete_questionnaire ← kliknul "Pokračovat" po dotazníku
+start_contact_form     ← začal psát do email inputu (jednorázový event)
+generate_lead          ← odeslal formulář (obsahuje user_data pro Enhanced Conversions)
+view_price_result      ← viděl výsledek s cenou
+```
+
+### `generate_lead` — user_data pro Enhanced Conversions
+```js
+user_data: {
+  email: leadData.email.toLowerCase().trim(),  // Google Enhanced Conversions
+  phone: combinedPhone.replace('+', ''),        // Meta: formát 420123456789
+}
+```
