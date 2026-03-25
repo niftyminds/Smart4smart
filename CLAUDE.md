@@ -34,7 +34,7 @@ Potřebné jak v `.env` (lokálně), tak v Vercel dashboardu (produkce):
 GOOGLE_SERVICE_ACCOUNT_EMAIL   # service account email z Google Cloud
 GOOGLE_PRIVATE_KEY             # RSA private key (s \n jako oddělovačem řádků)
 GOOGLE_SPREADSHEET_ID          # ID sheetu z URL
-GOOGLE_SHEET_NAME              # název záložky (Smart4smart Leads)
+GOOGLE_SHEET_NAME              # název hlavní záložky (aktuálně: VŠECHNY TYPY)
 GOOGLE_SHEET_URL               # celý odkaz na sheet (přijde v notifikačním emailu)
 RESEND_API_KEY                 # API klíč z resend.com
 NOTIFICATION_EMAIL             # marketing@niftyminds.cz
@@ -45,8 +45,19 @@ NOTIFICATION_EMAIL             # marketing@niftyminds.cz
 - Service account: `smart4smart-leads@smart-4-smart-kalkulacka.iam.gserviceaccount.com`
 - Service account musí mít roli **Editor** na sheetu
 - Headers jsou spravované automaticky funkcí `ensureHeaders()` — při každém odeslání se zkontrolují a případně přepíší
+- Záložky pro jednotlivé segmenty se vytvoří automaticky při prvním odeslání daného segmentu
 
-### Sloupce (A–T)
+### Záložky
+| Název záložky | Obsah |
+|---------------|-------|
+| `VŠECHNY TYPY` | Hlavní přehled — všechny segmenty, 20 sloupců (A–T) |
+| `Rodinný dům` | Pouze rodinny leads, 9 sloupců |
+| `Firemní prostředí` | Pouze firemni leads, 9 sloupců |
+| `Bytový dům` | Pouze bytovy leads, 9 sloupců |
+
+Přejmenování hlavní záložky: změnit název v Sheets + aktualizovat `GOOGLE_SHEET_NAME` v Vercel env (a `.env` lokálně).
+
+### Sloupce hlavní záložky (A–T)
 | Sl. | Název | Typ |
 |-----|-------|-----|
 | A | Datum | datetime string (`YYYY-MM-DD HH:MM:SS`) |
