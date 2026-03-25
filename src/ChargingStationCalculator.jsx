@@ -2168,7 +2168,7 @@ const ChargingStationCalculator = () => {
                         stationCount: '',
                         commonPower: ''
                       });
-                      setLeadData({ email: '', phone: '', consentData: false, consentContact: false });
+                      setLeadData({ email: '', phoneCountry: '+420', phoneNumber: '', consentData: false, consentContact: false });
                     }}
                     className="w-full border-2 border-slate-300 text-slate-700 hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50 font-semibold py-4 px-6 rounded-2xl transition-all duration-200"
                   >

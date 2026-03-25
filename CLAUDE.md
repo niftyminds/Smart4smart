@@ -43,12 +43,48 @@ NOTIFICATION_EMAIL             # marketing@niftyminds.cz
 ## Google Sheets setup
 - Projekt v Google Cloud Console: **smart-4-smart-kalkulacka**
 - Service account: `smart4smart-leads@smart-4-smart-kalkulacka.iam.gserviceaccount.com`
-- Sheet headers (řádek 1): `Datum | Segment | Email | Telefon | Odhadovaná cena (Kč) | Detaily dotazníku`
 - Service account musí mít roli **Editor** na sheetu
+- Headers jsou spravované automaticky funkcí `ensureHeaders()` — při každém odeslání se zkontrolují a případně přepíší
+
+### Sloupce (A–T)
+| Sl. | Název | Typ |
+|-----|-------|-----|
+| A | Datum | datetime string (`YYYY-MM-DD HH:MM:SS`) |
+| B | Segment | string |
+| C | Email | string |
+| D | Telefon | string (apostrofem chráněný před Sheets formulí) |
+| E | Odhadovaná cena (Kč) | **number** — formátováno jako `#,##0 "Kč"` přes batchUpdate |
+| F | Vzdálenost od rozvaděče | rodinny |
+| G | Smart funkce | rodinny |
+| H | Místo nabíjení | rodinny |
+| I | Parkovací místo | rodinny |
+| J | Rychlost nabíjení | rodinny |
+| K | Počet vozů | firemni |
+| L | Výkon DC stanice (kW) | firemni |
+| M | Stav přípravy | firemni |
+| N | Rozúčtování nákladů | firemni |
+| O | Cílová skupina | firemni |
+| P | Počet stanic | bytovy |
+| Q | Společný výkon k dispozici | bytovy |
+| R | Role žadatele | bytovy |
+| S | Místo instalace | bytovy |
+| T | Stav schválení | bytovy |
+
+Nevyplněné buňky (jiný segment) → prázdný string `''`.
+
+## Formulář — kontaktní data
+- **Email**: standard text input
+- **Telefon**: dropdown předvolby (`+420` / `+421`) + input pro číslo (9 číslic)
+  - Normalizace: `phoneNumber.replace(/[\s\-]/g, '')` před odesláním
+  - Frontend validace: přesně 9 číslic, jinak inline chybová hláška
+  - Backend validace: `/^\+\d{10,15}$/`
+  - Do Sheets posíláno jako `'${phone}` (apostrofem, aby Sheets nebral `+` jako formuli)
+- **Reset formuláře** (`setLeadData`): vždy používat `{ email: '', phoneCountry: '+420', phoneNumber: '', consentData: false, consentContact: false }` — starší field `phone` už neexistuje
 
 ## Emaily
 - **Notifikační email**: odesílá se při každém novém leadu na `marketing@niftyminds.cz`
 - **Error email**: odesílá se pokud selže Sheets nebo Resend, obsahuje zachycená data + doporučené kroky
+- Retry logika: 3 pokusy, exponenciální backoff (1s → 2s → 4s) pro Sheets i email
 
 ## Lokální vývoj
 ```bash
