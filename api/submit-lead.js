@@ -3,6 +3,24 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// --- Value → Czech label lookup maps ---
+const LABELS = {
+  chargingLocation: { dum: 'Dům', chata: 'Chata', garaz: 'Garáž jinde' },
+  parkingSpace:     { pozemek: 'Pozemek', garaz: 'Garáž', neresim: 'Neřeším' },
+  chargingSpeed:    { '11kw': '11 kW', '22kw': '22 kW', nevim: 'Nevím' },
+  distance:         { '0-5': 'Do 5 metrů', '5-15': '5–15 metrů', '15+': '15+ metrů' },
+  targetAudience:   { flotila: 'Flotila', zamestnanci: 'Zaměstnanci', klienti: 'Klienti', kombinace: 'Kombinace' },
+  carCount:         { '1-2': '1–2 auta', '3-5': '3–5 aut', '6-12': '6–12 aut', '12+': '12+ aut' },
+  dcStation:        { '': 'Bez DC stanice', '40-120': '40–120 kW', '160-240': '160–240 kW', '400': '400 kW' },
+  preparationState: { ready: 'Dostatečná kapacita', capacity: 'Kapacita může být nedostatečná', other: 'Nejsme si jistí' },
+  role:             { predseda: 'Předseda SVJ', facility: 'Facility manager', vlastnik: 'Vlastník bytu', jine: 'Jiné' },
+  installLocation:  { garaze: 'Garáže', venku: 'Venkovní parkoviště', nevim: 'Nevím' },
+  approvalStatus:   { schvaleno: 'Schváleno', zvazujeme: 'Zvažujeme', nesouhlas: 'Je nesouhlas' },
+  commonPower:      { yes: 'Ano', no: 'Ne', unsure: 'Nevím, potřebuji poradit' },
+};
+
+const l = (field, value) => (value !== undefined && value !== null ? (LABELS[field]?.[value] ?? value) : '');
+
 const HEADERS = [
   'Datum', 'Segment', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
   // Rodinný dům
@@ -51,31 +69,31 @@ function questRowsHtml(segment, questionnaire) {
       sf.rfid && 'RFID zabezpečení',
     ].filter(Boolean).join(', ');
     return [
-      row('Vzdálenost od rozvaděče', q.distance ? `${q.distance} m` : ''),
-      row('Místo nabíjení', q.chargingLocation),
-      row('Parkovací místo', q.parkingSpace),
-      row('Rychlost nabíjení', q.chargingSpeed),
+      row('Vzdálenost od rozvaděče', l('distance', q.distance)),
+      row('Místo nabíjení', l('chargingLocation', q.chargingLocation)),
+      row('Parkovací místo', l('parkingSpace', q.parkingSpace)),
+      row('Rychlost nabíjení', l('chargingSpeed', q.chargingSpeed)),
       row('Smart funkce', smartList || 'žádné'),
     ].join('');
   }
 
   if (segment === 'firemni') {
     return [
-      row('Cílová skupina', q.targetAudience),
-      row('Počet vozů', q.carCount),
-      row('Výkon DC stanice', q.dcStation ? `${q.dcStation} kW` : ''),
-      row('Stav přípravy', q.preparationState),
+      row('Cílová skupina', l('targetAudience', q.targetAudience)),
+      row('Počet vozů', l('carCount', q.carCount)),
+      row('Výkon DC stanice', l('dcStation', q.dcStation ?? '')),
+      row('Stav přípravy', l('preparationState', q.preparationState)),
       row('Rozúčtování nákladů', q.costAccounting ? 'Ano' : 'Ne'),
     ].join('');
   }
 
   if (segment === 'bytovy') {
     return [
-      row('Role žadatele', q.role),
-      row('Místo instalace', q.installLocation),
-      row('Stav schválení', q.approvalStatus),
+      row('Role žadatele', l('role', q.role)),
+      row('Místo instalace', l('installLocation', q.installLocation)),
+      row('Stav schválení', l('approvalStatus', q.approvalStatus)),
       row('Počet stanic', q.stationCount),
-      row('Společný výkon k dispozici', q.commonPower === 'yes' ? 'Ano' : 'Ne'),
+      row('Společný výkon k dispozici', l('commonPower', q.commonPower)),
     ].join('');
   }
 
@@ -178,23 +196,23 @@ async function appendToSheet(data) {
     `'${data.phone}`,                                                    // D: Telefon (apostrophe prefix → Sheets stores as text, keeps +)
     data.estimatedPrice || '',                                           // E: Cena (number)
     // Rodinný dům (F–J)
-    isRodinny ? (q.distance || '') : '',                                 // F: Vzdálenost od rozvaděče
+    isRodinny ? l('distance', q.distance) : '',                          // F: Vzdálenost od rozvaděče
     isRodinny ? (smartFunctions || '') : '',                             // G: Smart funkce
-    isRodinny ? (q.chargingLocation || '') : '',                         // H: Místo nabíjení
-    isRodinny ? (q.parkingSpace || '') : '',                             // I: Parkovací místo
-    isRodinny ? (q.chargingSpeed || '') : '',                            // J: Rychlost nabíjení
+    isRodinny ? l('chargingLocation', q.chargingLocation) : '',          // H: Místo nabíjení
+    isRodinny ? l('parkingSpace', q.parkingSpace) : '',                  // I: Parkovací místo
+    isRodinny ? l('chargingSpeed', q.chargingSpeed) : '',                // J: Rychlost nabíjení
     // Firemní prostředí (K–O)
-    isFiremni ? (q.carCount || '') : '',                                 // K: Počet vozů
-    isFiremni ? (q.dcStation || '') : '',                                // L: Výkon DC stanice
-    isFiremni ? (q.preparationState || '') : '',                         // M: Stav přípravy
+    isFiremni ? l('carCount', q.carCount) : '',                          // K: Počet vozů
+    isFiremni ? l('dcStation', q.dcStation ?? '') : '',                  // L: Výkon DC stanice
+    isFiremni ? l('preparationState', q.preparationState) : '',          // M: Stav přípravy
     isFiremni ? (q.costAccounting ? 'Ano' : 'Ne') : '',                  // N: Rozúčtování nákladů
-    isFiremni ? (q.targetAudience || '') : '',                           // O: Cílová skupina
+    isFiremni ? l('targetAudience', q.targetAudience) : '',              // O: Cílová skupina
     // Bytový dům (P–T)
-    isBytovy ? (parseInt(q.stationCount) || '') : '',                    // P: Počet stanic
-    isBytovy ? (q.commonPower === 'yes' ? 'Ano' : 'Ne') : '',            // Q: Společný výkon
-    isBytovy ? (q.role || '') : '',                                      // R: Role žadatele
-    isBytovy ? (q.installLocation || '') : '',                           // S: Místo instalace
-    isBytovy ? (q.approvalStatus || '') : '',                            // T: Stav schválení
+    isBytovy ? (parseInt(q.stationCount) || '') : '',                    // P: Počet stanic (number)
+    isBytovy ? l('commonPower', q.commonPower) : '',                     // Q: Společný výkon
+    isBytovy ? l('role', q.role) : '',                                   // R: Role žadatele
+    isBytovy ? l('installLocation', q.installLocation) : '',             // S: Místo instalace
+    isBytovy ? l('approvalStatus', q.approvalStatus) : '',               // T: Stav schválení
   ];
 
   await sheets.spreadsheets.values.append({
