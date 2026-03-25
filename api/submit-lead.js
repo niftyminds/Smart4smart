@@ -5,9 +5,12 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const HEADERS = [
   'Datum', 'Segment', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
-  'Vzdálenost od rozvaděče', 'Smart funkce',
-  'Počet vozů', 'Výkon DC stanice (kW)', 'Stav přípravy', 'Rozúčtování nákladů',
-  'Počet stanic', 'Společný výkon k dispozici',
+  // Rodinný dům
+  'Vzdálenost od rozvaděče', 'Smart funkce', 'Místo nabíjení', 'Parkovací místo', 'Rychlost nabíjení',
+  // Firemní prostředí
+  'Počet vozů', 'Výkon DC stanice (kW)', 'Stav přípravy', 'Rozúčtování nákladů', 'Cílová skupina',
+  // Bytový dům
+  'Počet stanic', 'Společný výkon k dispozici', 'Role žadatele', 'Místo instalace', 'Stav schválení',
 ];
 
 // --- Retry helper ---
@@ -27,12 +30,20 @@ async function withRetry(fn, label, maxAttempts = 3) {
   throw new Error(`${label} failed after ${maxAttempts} attempts: ${lastError.message}`);
 }
 
-// --- Questionnaire → human readable (for emails) ---
-function formatQuestionnaireForEmail(segment, questionnaire) {
-  if (!questionnaire) return 'N/A';
+// --- Questionnaire → individual HTML table rows (for emails) ---
+function questRowsHtml(segment, questionnaire) {
+  const q = questionnaire || {};
+  const sf = q.smartFunctions || {};
+  const row = (label, value) => {
+    if (!value && value !== 0) return '';
+    return `
+      <tr>
+        <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #64748b; width: 40%;">${label}</td>
+        <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">${value}</td>
+      </tr>`;
+  };
 
   if (segment === 'rodinny') {
-    const sf = questionnaire.smartFunctions || {};
     const smartList = [
       sf.dynamicPower && 'Dynamické řízení výkonu + RFID',
       sf.lowTariff && 'Nabíjení v nízkém tarifu',
@@ -40,28 +51,35 @@ function formatQuestionnaireForEmail(segment, questionnaire) {
       sf.rfid && 'RFID zabezpečení',
     ].filter(Boolean).join(', ');
     return [
-      `Vzdálenost od rozvaděče: ${questionnaire.distance || 'N/A'}m`,
-      `Smart funkce: ${smartList || 'žádné'}`,
-    ].join(' | ');
+      row('Vzdálenost od rozvaděče', q.distance ? `${q.distance} m` : ''),
+      row('Místo nabíjení', q.chargingLocation),
+      row('Parkovací místo', q.parkingSpace),
+      row('Rychlost nabíjení', q.chargingSpeed),
+      row('Smart funkce', smartList || 'žádné'),
+    ].join('');
   }
 
   if (segment === 'firemni') {
     return [
-      `Počet vozů: ${questionnaire.carCount || 'N/A'}`,
-      `Výkon DC stanice: ${questionnaire.dcStation || 'N/A'} kW`,
-      `Stav přípravy: ${questionnaire.preparationState || 'N/A'}`,
-      `Rozúčtování nákladů: ${questionnaire.costAccounting ? 'Ano' : 'Ne'}`,
-    ].join(' | ');
+      row('Cílová skupina', q.targetAudience),
+      row('Počet vozů', q.carCount),
+      row('Výkon DC stanice', q.dcStation ? `${q.dcStation} kW` : ''),
+      row('Stav přípravy', q.preparationState),
+      row('Rozúčtování nákladů', q.costAccounting ? 'Ano' : 'Ne'),
+    ].join('');
   }
 
   if (segment === 'bytovy') {
     return [
-      `Počet stanic: ${questionnaire.stationCount || 'N/A'}`,
-      `Společný výkon k dispozici: ${questionnaire.commonPower === 'yes' ? 'Ano' : 'Ne'}`,
-    ].join(' | ');
+      row('Role žadatele', q.role),
+      row('Místo instalace', q.installLocation),
+      row('Stav schválení', q.approvalStatus),
+      row('Počet stanic', q.stationCount),
+      row('Společný výkon k dispozici', q.commonPower === 'yes' ? 'Ano' : 'Ne'),
+    ].join('');
   }
 
-  return JSON.stringify(questionnaire);
+  return '';
 }
 
 // --- Segment label ---
@@ -154,24 +172,34 @@ async function appendToSheet(data) {
   const isBytovy = data.segment === 'bytovy';
 
   const row = [
-    new Date().toLocaleString('cs-CZ', { timeZone: 'Europe/Prague' }), // A: Datum
+    new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Prague' }),  // A: Datum (YYYY-MM-DD HH:MM:SS → Sheets datetime)
     segmentLabel(data.segment),                                          // B: Segment
     data.email,                                                          // C: Email
-    data.phone,                                                          // D: Telefon
+    `'${data.phone}`,                                                    // D: Telefon (apostrophe prefix → Sheets stores as text, keeps +)
     data.estimatedPrice || '',                                           // E: Cena (number)
+    // Rodinný dům (F–J)
     isRodinny ? (q.distance || '') : '',                                 // F: Vzdálenost od rozvaděče
     isRodinny ? (smartFunctions || '') : '',                             // G: Smart funkce
-    isFiremni ? (q.carCount || '') : '',                                 // H: Počet vozů
-    isFiremni ? (q.dcStation || '') : '',                                // I: Výkon DC stanice
-    isFiremni ? (q.preparationState || '') : '',                         // J: Stav přípravy
-    isFiremni ? (q.costAccounting ? 'Ano' : 'Ne') : '',                  // K: Rozúčtování nákladů
-    isBytovy ? (parseInt(q.stationCount) || '') : '',                    // L: Počet stanic
-    isBytovy ? (q.commonPower === 'yes' ? 'Ano' : 'Ne') : '',            // M: Společný výkon
+    isRodinny ? (q.chargingLocation || '') : '',                         // H: Místo nabíjení
+    isRodinny ? (q.parkingSpace || '') : '',                             // I: Parkovací místo
+    isRodinny ? (q.chargingSpeed || '') : '',                            // J: Rychlost nabíjení
+    // Firemní prostředí (K–O)
+    isFiremni ? (q.carCount || '') : '',                                 // K: Počet vozů
+    isFiremni ? (q.dcStation || '') : '',                                // L: Výkon DC stanice
+    isFiremni ? (q.preparationState || '') : '',                         // M: Stav přípravy
+    isFiremni ? (q.costAccounting ? 'Ano' : 'Ne') : '',                  // N: Rozúčtování nákladů
+    isFiremni ? (q.targetAudience || '') : '',                           // O: Cílová skupina
+    // Bytový dům (P–T)
+    isBytovy ? (parseInt(q.stationCount) || '') : '',                    // P: Počet stanic
+    isBytovy ? (q.commonPower === 'yes' ? 'Ano' : 'Ne') : '',            // Q: Společný výkon
+    isBytovy ? (q.role || '') : '',                                      // R: Role žadatele
+    isBytovy ? (q.installLocation || '') : '',                           // S: Místo instalace
+    isBytovy ? (q.approvalStatus || '') : '',                            // T: Stav schválení
   ];
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: `${sheetName}!A:M`,
+    range: `${sheetName}!A:T`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
@@ -181,7 +209,6 @@ async function appendToSheet(data) {
 async function sendNotificationEmail(data) {
   const sheetUrl = process.env.GOOGLE_SHEET_URL || '#';
   const segName = segmentLabel(data.segment);
-  const questDetail = formatQuestionnaireForEmail(data.segment, data.questionnaire);
   const priceFormatted = data.estimatedPrice
     ? `${Math.round(data.estimatedPrice).toLocaleString('cs-CZ')} Kč`
     : 'N/A';
@@ -219,9 +246,9 @@ async function sendNotificationEmail(data) {
               <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 18px; font-weight: bold; color: #2563eb;">${priceFormatted}</td>
             </tr>
             <tr>
-              <td style="padding: 10px 0; font-weight: bold; color: #64748b;">Detaily dotazníku</td>
-              <td style="padding: 10px 0;">${questDetail}</td>
+              <td colspan="2" style="padding: 16px 0 8px; font-weight: bold; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Dotazník</td>
             </tr>
+            ${questRowsHtml(data.segment, data.questionnaire)}
           </table>
 
           <div style="text-align: center; margin-top: 24px;">

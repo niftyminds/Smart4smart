@@ -2094,7 +2094,7 @@ const ChargingStationCalculator = () => {
                       <div className="flex items-center gap-3 p-3 bg-white rounded-lg">
                         <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
                         <span className="font-semibold text-slate-700">Telefon:</span>
-                        <span className="text-slate-900">{leadData.phone}</span>
+                        <span className="text-slate-900">{leadData.phoneCountry}{leadData.phoneNumber.replace(/[\s\-]/g, '')}</span>
                       </div>
                     </div>
                   </div>
