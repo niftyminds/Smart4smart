@@ -350,8 +350,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields: email, phone, segment' });
   }
 
-  // Phone validation: +420 or +421 followed by exactly 9 digits
-  if (!/^\+42[01]\d{9}$/.test(data.phone)) {
+  // Phone sanity check: starts with + followed by digits only
+  if (!/^\+\d{10,15}$/.test(data.phone)) {
     return res.status(400).json({ error: 'invalid_phone' });
   }
 
