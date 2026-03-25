@@ -31,6 +31,34 @@ const HEADERS = [
   'Počet stanic', 'Společný výkon k dispozici', 'Role žadatele', 'Místo instalace', 'Stav schválení',
 ];
 
+// --- Segment-specific sheets ---
+const SEGMENT_SHEETS = {
+  rodinny: {
+    name: 'Rodinný dům',
+    headers: [
+      'Datum', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
+      'Vzdálenost od rozvaděče', 'Smart funkce', 'Místo nabíjení', 'Parkovací místo', 'Rychlost nabíjení',
+    ],
+    priceColIndex: 3, // column D
+  },
+  firemni: {
+    name: 'Firemní prostředí',
+    headers: [
+      'Datum', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
+      'Počet vozů', 'Výkon DC stanice (kW)', 'Stav přípravy', 'Rozúčtování nákladů', 'Cílová skupina',
+    ],
+    priceColIndex: 3,
+  },
+  bytovy: {
+    name: 'Bytový dům',
+    headers: [
+      'Datum', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
+      'Počet stanic', 'Společný výkon k dispozici', 'Role žadatele', 'Místo instalace', 'Stav schválení',
+    ],
+    priceColIndex: 3,
+  },
+};
+
 // --- Retry helper ---
 async function withRetry(fn, label, maxAttempts = 3) {
   let lastError;
@@ -108,25 +136,37 @@ function segmentLabel(segment) {
   return segment;
 }
 
-// --- Ensure header row exists and column E is formatted as currency ---
-async function ensureHeaders(sheets, spreadsheetId, sheetName) {
+// --- Ensure sheet tab exists (creates it if missing) ---
+async function ensureSheetExists(sheets, spreadsheetId, sheetName) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId });
+  const exists = meta.data.sheets.some((s) => s.properties.title === sheetName);
+  if (!exists) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: { requests: [{ addSheet: { properties: { title: sheetName } } }] },
+    });
+  }
+}
+
+// --- Ensure header row exists and price column is formatted as currency ---
+async function ensureHeaders(sheets, spreadsheetId, sheetName, expectedHeaders, priceColIndex = 4) {
   const getRes = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${sheetName}!1:1`,
+    range: `'${sheetName}'!1:1`,
   });
   const existing = getRes.data.values?.[0] || [];
 
-  if (JSON.stringify(existing) === JSON.stringify(HEADERS)) return;
+  if (JSON.stringify(existing) === JSON.stringify(expectedHeaders)) return;
 
   // Write/update headers
   await sheets.spreadsheets.values.update({
     spreadsheetId,
-    range: `${sheetName}!A1`,
+    range: `'${sheetName}'!A1`,
     valueInputOption: 'USER_ENTERED',
-    requestBody: { values: [HEADERS] },
+    requestBody: { values: [expectedHeaders] },
   });
 
-  // Format column E (index 4) as currency with no decimals
+  // Format price column as currency with no decimals
   const spreadsheet = await sheets.spreadsheets.get({ spreadsheetId });
   const sheetObj = spreadsheet.data.sheets.find((s) => s.properties.title === sheetName);
   if (!sheetObj) return;
@@ -140,8 +180,8 @@ async function ensureHeaders(sheets, spreadsheetId, sheetName) {
             range: {
               sheetId: sheetObj.properties.sheetId,
               startRowIndex: 1, // skip header row
-              startColumnIndex: 4, // column E
-              endColumnIndex: 5,
+              startColumnIndex: priceColIndex,
+              endColumnIndex: priceColIndex + 1,
             },
             cell: {
               userEnteredFormat: {
@@ -159,6 +199,55 @@ async function ensureHeaders(sheets, spreadsheetId, sheetName) {
   });
 }
 
+// --- Build a segment-specific row (common fields + segment fields only) ---
+function buildSegmentRow(segment, data) {
+  const q = data.questionnaire || {};
+  const sf = q.smartFunctions || {};
+  const date = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Prague' });
+  const common = [date, data.email, `'${data.phone}`, data.estimatedPrice || ''];
+
+  if (segment === 'rodinny') {
+    const smartList = [
+      sf.dynamicPower && 'Dynamické řízení výkonu + RFID',
+      sf.lowTariff && 'Nabíjení v nízkém tarifu',
+      sf.planning && 'Plánování nabíjení',
+      sf.rfid && 'RFID zabezpečení',
+    ].filter(Boolean).join(', ');
+    return [
+      ...common,
+      l('distance', q.distance),
+      smartList || '',
+      l('chargingLocation', q.chargingLocation),
+      l('parkingSpace', q.parkingSpace),
+      l('chargingSpeed', q.chargingSpeed),
+    ];
+  }
+
+  if (segment === 'firemni') {
+    return [
+      ...common,
+      l('carCount', q.carCount),
+      l('dcStation', q.dcStation ?? ''),
+      l('preparationState', q.preparationState),
+      q.costAccounting ? 'Ano' : 'Ne',
+      l('targetAudience', q.targetAudience),
+    ];
+  }
+
+  if (segment === 'bytovy') {
+    return [
+      ...common,
+      parseInt(q.stationCount) || '',
+      l('commonPower', q.commonPower),
+      l('role', q.role),
+      l('installLocation', q.installLocation),
+      l('approvalStatus', q.approvalStatus),
+    ];
+  }
+
+  return common;
+}
+
 // --- Append row to Google Sheets ---
 async function appendToSheet(data) {
   const auth = new google.auth.GoogleAuth({
@@ -171,9 +260,9 @@ async function appendToSheet(data) {
 
   const sheets = google.sheets({ version: 'v4', auth });
   const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
-  const sheetName = process.env.GOOGLE_SHEET_NAME || 'Smart4smart Leads';
+  const sheetName = process.env.GOOGLE_SHEET_NAME || 'Smart4Smart Leads';
 
-  await ensureHeaders(sheets, spreadsheetId, sheetName);
+  await ensureHeaders(sheets, spreadsheetId, sheetName, HEADERS, 4);
 
   const q = data.questionnaire || {};
   const sf = q.smartFunctions || {};
@@ -217,10 +306,24 @@ async function appendToSheet(data) {
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: `${sheetName}!A:T`,
+    range: `'${sheetName}'!A:T`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
+
+  // Append to segment-specific sheet
+  const seg = SEGMENT_SHEETS[data.segment];
+  if (seg) {
+    await ensureSheetExists(sheets, spreadsheetId, seg.name);
+    await ensureHeaders(sheets, spreadsheetId, seg.name, seg.headers, seg.priceColIndex);
+    const segRow = buildSegmentRow(data.segment, data);
+    await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range: `'${seg.name}'!A:I`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [segRow] },
+    });
+  }
 }
 
 // --- Send success notification email ---
@@ -232,13 +335,13 @@ async function sendNotificationEmail(data) {
     : 'N/A';
 
   await resend.emails.send({
-    from: 'Smart4smart <onboarding@resend.dev>',
+    from: 'Smart4Smart <onboarding@resend.dev>',
     to: process.env.NOTIFICATION_EMAIL,
     subject: `🔌 Nový lead - ${segName} - ${data.email}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1e293b;">
         <div style="background: linear-gradient(135deg, #2563eb, #7c3aed); padding: 32px; border-radius: 12px 12px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">🔌 Nový lead ze Smart4smart kalkulačky</h1>
+          <h1 style="color: white; margin: 0; font-size: 24px;">🔌 Nový lead ze Smart4Smart kalkulačky</h1>
         </div>
         <div style="background: #f8fafc; padding: 32px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0;">
 
@@ -287,7 +390,7 @@ async function sendErrorEmail(data, failedStep, errorMessage) {
     : 'N/A';
 
   await resend.emails.send({
-    from: 'Smart4smart <onboarding@resend.dev>',
+    from: 'Smart4Smart <onboarding@resend.dev>',
     to: process.env.NOTIFICATION_EMAIL,
     subject: `⚠️ Chyba při zpracování leadu - ${segmentLabel(data?.segment)} - ${data?.email}`,
     html: `
