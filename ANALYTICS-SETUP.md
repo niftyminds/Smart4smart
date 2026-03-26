@@ -24,13 +24,13 @@ Conversion event: **`generate_lead`** (odeslání formuláře s kontaktem).
 ### GTM
 1. Jdi na [tagmanager.google.com](https://tagmanager.google.com)
 2. Vytvoř účet → kontejner (typ: **Web**)
-3. Zkopíruj **Container ID** (`GTM-XXXXXXX`)
-4. Vlož ho do `index.html` na **dvou místech** kde je `GTM-XXXXXXX`
+3. Zkopíruj **Container ID** (`GTM-PHW2TK4N`)
+4. Vlož ho do `index.html` na **dvou místech** kde je `GTM-PHW2TK4N`
 
 ### Google Analytics 4
 1. Jdi na [analytics.google.com](https://analytics.google.com)
 2. Vytvoř Property → Data Stream → Web → zadej URL webu
-3. Zkopíruj **Measurement ID** (`G-XXXXXXXXXX`)
+3. Zkopíruj **Measurement ID** (`G-JVY9Y7W5X9`)
 
 ### Google Ads
 1. Jdi na [ads.google.com](https://ads.google.com) → Nástroje → Konverze
@@ -90,7 +90,7 @@ Vytvoř **Custom Event** trigger pro každý dataLayer event (Triggers → New �
 
 ### Tag 1: GA4 Configuration (Google Tag)
 - **Tag type**: Google Tag
-- **Tag ID**: `G-XXXXXXXXXX` ← tvé Measurement ID
+- **Tag ID**: `G-JVY9Y7W5X9` ← tvé Measurement ID
 - **Trigger**: All Pages (Initialization - All Pages)
 - **Consent settings**: Required → `analytics_storage`
 
@@ -107,7 +107,7 @@ Pro každý event vytvoř jeden tag (Tags → New → **Google Analytics: GA4 Ev
 | `GA4 - view_price_result` | `view_price_result` | CE - view_price_result | `segment`, `estimated_price` |
 
 Každý GA4 Event tag:
-- **Measurement ID**: `G-XXXXXXXXXX`
+- **Measurement ID**: `G-JVY9Y7W5X9`
 - **Consent settings**: Required → `analytics_storage`
 
 ### GA4 konverze
@@ -151,7 +151,7 @@ Scrolluj dolů v tagu na sekci **User-provided data**:
 Samostatný tag pro předání user data napříč **všemi** Google produkty (GA4, Ads, Floodlight) — doporučeno Google vedle Enhanced Conversions.
 
 - **Tag type**: Google tag: User-Provided Data
-- **Configuration tag**: vyber svůj Google Tag (`G-XXXXXXXXXX`)
+- **Configuration tag**: vyber svůj Google Tag (`G-JVY9Y7W5X9`)
 - **Method**: Manual — Data layer variables
 - Vyplň:
   - **Email**: `{{dlv - user_email}}`

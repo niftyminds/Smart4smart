@@ -107,8 +107,11 @@ export default function CookieConsent() {
       {/* Initial banner — shown on first visit */}
       {status === null && !showModal && (
         /* Mobile: full-width bottom sheet | Desktop: floating card with margins */
-        <div className="fixed bottom-2 left-2 right-2 sm:bottom-2 sm:left-1 sm:right-1 md:bottom-10 md:left-10 md:right-10 z-50 sm:p-3">
-          <div className={`${slideClass} max-w-5xl mx-auto bg-slate-100 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.10)] sm:shadow-[0_20px_60px_-5px_rgba(0,0,0,0.12)] border border-slate-200 px-5 pt-5 pb-6 sm:px-8 sm:py-6 max-h-[calc(100vh-2rem)] overflow-y-auto`}>
+        <div className="fixed bottom-2 left-2 right-2 sm:bottom-2 sm:left-4 sm:right-4 lg:bottom-10 lg:left-10 lg:right-10 z-50 lg:p-3">
+          {/* Shadow wrapper — no overflow so shadow isn't clipped */}
+          <div className={`${slideClass} max-w-5xl mx-auto rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.10)] lg:shadow-[0_20px_60px_-5px_rgba(0,0,0,0.12)]`}>
+          {/* Content wrapper — overflow here, no shadow */}
+          <div className="bg-slate-100 rounded-2xl border border-slate-200 px-5 pt-5 pb-6 sm:px-8 sm:py-6 max-h-[calc(100vh-2rem)] overflow-y-auto">
             {/* Title + description — always stacked */}
             <h3 className="text-slate-900 font-bold text-base mb-1.5 flex items-center gap-2">
               <CookieIcon size={18} className="text-slate-500 shrink-0" />
@@ -138,6 +141,7 @@ export default function CookieConsent() {
                 Přijmout vše
               </button>
             </div>
+          </div>
           </div>
         </div>
       )}
