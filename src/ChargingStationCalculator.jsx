@@ -33,6 +33,7 @@ const ChargingStationCalculator = () => {
   const [step, setStep] = useState('segment');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [segment, setSegment] = useState('');
+  const segmentLabel = segment === 'rodinny' ? 'Rodinný dům' : segment === 'firemni' ? 'Firemní prostředí' : segment === 'bytovy' ? 'Bytový dům' : '';
   const calculatorRef = useRef(null);
   const contactFormStarted = useRef(false);
 
@@ -83,11 +84,8 @@ const ChargingStationCalculator = () => {
       const finalPrice = calculatePrice();
       // GTM Event: Price result viewed
       pushToDataLayer('view_price_result', {
-        segment: segment,
-        segment_name: segment === 'rodinny' ? 'Rodinný dům' :
-                      segment === 'firemni' ? 'Firemní prostředí' : 'Bytový dům',
-        price: finalPrice,
-        price_range: getPriceRange(finalPrice),
+        segment: segmentLabel,
+        estimated_price: finalPrice,
         currency: 'CZK'
       });
     }
@@ -331,9 +329,7 @@ const ChargingStationCalculator = () => {
   const handleSegmentSelect = (selectedSegment) => {
     // GTM Event: Segment Selection
     pushToDataLayer('select_segment', {
-      segment_type: selectedSegment === 'rodinny' ? 'Rodinný dům' :
-                    selectedSegment === 'firemni' ? 'Firemní prostředí' : 'Bytový dům',
-      segment_id: selectedSegment
+      segment: selectedSegment === 'rodinny' ? 'Rodinný dům' : selectedSegment === 'firemni' ? 'Firemní prostředí' : 'Bytový dům',
     });
 
     setSegment(selectedSegment);
@@ -344,7 +340,7 @@ const ChargingStationCalculator = () => {
     if (isQuestionnaireComplete()) {
       // GTM Event: Begin Checkout (user proceeds to lead form)
       pushToDataLayer('complete_questionnaire', {
-        segment: segment,
+        segment: segmentLabel,
         estimated_price: calculatePrice(),
         currency: 'CZK'
       });
@@ -379,14 +375,9 @@ const ChargingStationCalculator = () => {
 
     // GTM Event: Lead Conversion
     pushToDataLayer('generate_lead', {
-      segment: segment,
-      segment_name: segment === 'rodinny' ? 'Rodinný dům' :
-                    segment === 'firemni' ? 'Firemní prostředí' : 'Bytový dům',
-      price: finalPrice,
-      price_range: getPriceRange(finalPrice),
+      segment: segmentLabel,
+      estimated_price: finalPrice,
       currency: 'CZK',
-      email: leadData.email,
-      phone: combinedPhone,
       user_data: {
         email: leadData.email.toLowerCase().trim(),
         phone: combinedPhone.replace('+', ''), // Meta format: 420123456789
@@ -1876,7 +1867,7 @@ const ChargingStationCalculator = () => {
                           if (!contactFormStarted.current) {
                             contactFormStarted.current = true;
                             pushToDataLayer('start_contact_form', {
-                              segment: segment,
+                              segment: segmentLabel,
                               estimated_price: calculatePrice(),
                               currency: 'CZK'
                             });
