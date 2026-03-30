@@ -420,6 +420,10 @@ const ChargingStationCalculator = () => {
     }));
   };
 
+  const scrollToHowItWorks = () => {
+    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const scrollToCalculator = () => {
     // GTM Event: CTA Click
     pushToDataLayer('click_cta', {
@@ -660,7 +664,7 @@ const ChargingStationCalculator = () => {
                   Spočítat odhad
                 </button>
                 <button
-                  onClick={scrollToCalculator}
+                  onClick={scrollToHowItWorks}
                   className="border-2 border-slate-300 text-slate-700 hover:border-blue-600 hover:text-blue-600 font-semibold py-4 px-8 rounded-xl transition-all duration-200 text-base"
                 >
                   Jak kalkulátor funguje?
@@ -680,7 +684,7 @@ const ChargingStationCalculator = () => {
       </section>
 
       {/* How It Works */}
-      <section className="py-16 bg-slate-50">
+      <section id="how-it-works" className="py-16 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">
@@ -2387,7 +2391,7 @@ const ChargingStationCalculator = () => {
             </div>
           </div>
           <div className="border-t border-slate-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-3 text-slate-500 text-xs">
-            <p>&copy; 2024 Kalkulátor instalace nabíjecích stanic. Všechna práva vyhrazena.</p>
+            <p>&copy; 2026 Kalkulátor instalace nabíjecích stanic. Všechna práva vyhrazena.</p>
             <p>Ceny jsou orientační a vycházejí z průměrných tržních dat pro rok 2026.</p>
           </div>
         </div>

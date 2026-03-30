@@ -115,7 +115,7 @@ export default function CookieConsent() {
               Používáme cookies
             </h3>
             <p className="text-slate-500 text-sm leading-relaxed mb-4 sm:mb-0">
-              Cookies nám pomáhají zlepšovat web a zobrazovat relevantní obsah. Nezbytné cookies jsou vždy aktivní.
+              Díky cookies vidíte obsah, který vás zajímá, a my web průběžně zlepšujeme. Nezbytné cookies jsou vždy aktivní.
             </p>
             {/* Buttons: row on mobile (equal width), row on desktop (auto width right-aligned) */}
             <div className="flex flex-row gap-2 mt-4 sm:mt-3 sm:justify-end">
@@ -177,13 +177,13 @@ export default function CookieConsent() {
                 />
                 <CookieCategory
                   title="Analytické cookies"
-                  description="Pomáhají nám pochopit, jak návštěvníci web používají, a zlepšovat obsah (Google Analytics)."
+                  description="Pomáhají nám pochopit, jak návštěvníci web používají — co funguje a co zlepšit. Data jsou anonymní a slouží výhradně ke zkvalitnění obsahu."
                   checked={preferences.analytics}
                   onChange={(v) => setPreferences((p) => ({ ...p, analytics: v }))}
                 />
                 <CookieCategory
                   title="Reklamní cookies"
-                  description="Umožňují zobrazovat relevantní reklamy a měřit jejich výkon (Google Ads, Meta/Facebook)."
+                  description="Umožňují měřit výkonnost reklam a zobrazovat relevantní nabídky lidem, kteří o instalaci nabíjecí stanice skutečně uvažují."
                   checked={preferences.ads}
                   onChange={(v) => setPreferences((p) => ({ ...p, ads: v }))}
                 />

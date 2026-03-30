@@ -92,7 +92,7 @@ Vytvoř **Custom Event** trigger pro každý dataLayer event (Triggers → New �
 - **Tag type**: Google Tag
 - **Tag ID**: `G-JVY9Y7W5X9` ← tvé Measurement ID
 - **Trigger**: All Pages (Initialization - All Pages)
-- **Consent settings**: Required → `analytics_storage`
+- **Consent settings**: **No additional consent required** — GA4 interně respektuje consent signály (anonymizovaná měření při `denied`, plná data při `granted`). Nikdy neblokuj config tag!
 
 ### Tag 2–7: GA4 Events
 Pro každý event vytvoř jeden tag (Tags → New → **Google Analytics: GA4 Event**):
@@ -121,7 +121,7 @@ V Google Analytics → Admin → Events → najdi `generate_lead` → přepni **
 - **Tag type**: Google Ads Remarketing
 - **Conversion ID**: `AW-XXXXXXXXX`
 - **Trigger**: All Pages
-- **Consent**: Required → `ad_storage`, `ad_personalization`
+- **Consent settings**: **No additional consent required** — stejný princip jako GA4 Config, Google Ads knihovna interně respektuje `ad_storage` a `ad_personalization` signály
 
 ### Tag: Google Ads Conversion — generate_lead
 - **Tag type**: Google Ads Conversion Tracking
@@ -209,12 +209,13 @@ V sekci **Advanced Matching** namapuj:
 
 Všechny tagy mají nastavené consent requirements. Přehled:
 
-| Tag | Vyžaduje consent |
+| Tag | Consent nastavení |
 |---|---|
-| GA4 | `analytics_storage` |
-| Google Ads Conversion | `ad_storage`, `ad_user_data` |
-| Google Ads Remarketing | `ad_storage`, `ad_personalization` |
-| Meta Pixel | `ad_storage`, `ad_user_data` |
+| GA4 Configuration | **No additional consent required** (knihovna respektuje signály interně) |
+| Google Ads Remarketing | **No additional consent required** (knihovna respektuje signály interně) |
+| GA4 Events | Required → `analytics_storage` |
+| Google Ads Conversion | Required → `ad_storage`, `ad_user_data` |
+| Meta Pixel | Required → `ad_storage`, `ad_user_data` |
 
 Tagy se automaticky nespustí pokud uživatel daný consent neudělil.
 Modelování konverzí (Google) bude fungovat i pro uživatele bez souhlasu díky Consent Mode v2.
