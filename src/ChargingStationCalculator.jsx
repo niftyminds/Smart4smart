@@ -588,12 +588,16 @@ const ChargingStationCalculator = () => {
 
   const Tooltip = ({ text }) => (
     <span className="group relative inline-flex items-center">
-      <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-200 text-slate-500 text-xs font-bold cursor-help hover:bg-blue-100 hover:text-blue-700 transition-colors select-none">
+      <span
+        tabIndex={0}
+        onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
+        className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-200 text-slate-500 text-xs font-bold cursor-help hover:bg-blue-100 hover:text-blue-700 focus:bg-blue-100 focus:text-blue-700 focus:outline-none transition-colors select-none"
+      >
         i
       </span>
-      <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-60 bg-slate-900 text-white text-xs rounded-lg px-3 py-2.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed shadow-xl">
+      <span className="absolute right-0 bottom-full mb-2 w-60 bg-slate-900 text-white text-xs rounded-lg px-3 py-2.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none z-50 leading-relaxed shadow-xl">
         {text}
-        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900"></span>
+        <span className="absolute top-full right-2 border-4 border-transparent border-t-slate-900"></span>
       </span>
     </span>
   );
@@ -1886,12 +1890,12 @@ const ChargingStationCalculator = () => {
                       <label className="block text-sm font-semibold text-slate-700 mb-2">
                         Telefonní číslo *
                       </label>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 w-full min-w-0">
                         <div className="relative flex-shrink-0">
                           <select
                             value={leadData.phoneCountry}
                             onChange={(e) => setLeadData(prev => ({...prev, phoneCountry: e.target.value}))}
-                            className="appearance-none pl-3 pr-10 py-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg bg-white cursor-pointer"
+                            className="appearance-none pl-3 pr-10 py-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg bg-white cursor-pointer w-[110px]"
                           >
                             <option value="+420">🇨🇿 +420</option>
                             <option value="+421">🇸🇰 +421</option>
@@ -1907,7 +1911,7 @@ const ChargingStationCalculator = () => {
                           required
                           value={leadData.phoneNumber}
                           onChange={(e) => { setLeadData(prev => ({...prev, phoneNumber: e.target.value})); setFormError(null); }}
-                          className="flex-1 px-5 py-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg"
+                          className="flex-1 min-w-0 px-5 py-4 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg"
                           placeholder="123 456 789"
                         />
                       </div>
