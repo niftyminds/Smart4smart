@@ -32,7 +32,7 @@ const HEADERS = [
   // Bytový dům
   'Počet stanic', 'Společný výkon k dispozici', 'Role žadatele', 'Místo instalace', 'Stav schválení',
   // Intent (všechny segmenty)
-  'Kdy plánuje instalaci', 'Jak může pomoci',
+  'Termín instalace', 'Zájem leada',
 ];
 
 // --- Segment-specific sheets ---
@@ -42,7 +42,7 @@ const SEGMENT_SHEETS = {
     headers: [
       'Datum', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
       'Vzdálenost od rozvaděče', 'Smart funkce', 'Místo nabíjení', 'Parkovací místo', 'Rychlost nabíjení',
-      'Kdy plánuje instalaci', 'Jak může pomoci',
+      'Termín instalace', 'Zájem leada',
     ],
     priceColIndex: 3,
   },
@@ -51,7 +51,7 @@ const SEGMENT_SHEETS = {
     headers: [
       'Datum', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
       'Počet vozů', 'Výkon DC stanice (kW)', 'Stav přípravy', 'Rozúčtování nákladů', 'Cílová skupina',
-      'Kdy plánuje instalaci', 'Jak může pomoci',
+      'Termín instalace', 'Zájem leada',
     ],
     priceColIndex: 3,
   },
@@ -60,7 +60,7 @@ const SEGMENT_SHEETS = {
     headers: [
       'Datum', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
       'Počet stanic', 'Společný výkon k dispozici', 'Role žadatele', 'Místo instalace', 'Stav schválení',
-      'Kdy plánuje instalaci', 'Jak může pomoci',
+      'Termín instalace', 'Zájem leada',
     ],
     priceColIndex: 3,
   },
@@ -317,8 +317,8 @@ async function appendToSheet(data) {
     isBytovy ? l('role', q.role) : '',                                   // R: Role žadatele
     isBytovy ? l('installLocation', q.installLocation) : '',             // S: Místo instalace
     isBytovy ? l('approvalStatus', q.approvalStatus) : '',               // T: Stav schválení
-    l('purchaseTimeline', data.purchaseTimeline),                         // U: Kdy plánuje instalaci
-    l('helpType', data.helpType),                                         // V: Jak může pomoci
+    l('purchaseTimeline', data.purchaseTimeline),                         // U: Termín instalace
+    l('helpType', data.helpType),                                         // V: Zájem leada
   ];
 
   await sheets.spreadsheets.values.append({
@@ -384,11 +384,11 @@ async function sendNotificationEmail(data) {
               <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 18px; font-weight: bold; color: #2563eb;">${priceFormatted}</td>
             </tr>
             <tr>
-              <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #64748b; width: 40%;">Kdy plánuje instalaci</td>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #64748b; width: 40%;">Termín instalace</td>
               <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">${l('purchaseTimeline', data.purchaseTimeline) || '—'}</td>
             </tr>
             <tr>
-              <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #64748b;">Jak může pomoci</td>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #64748b;">Zájem leada</td>
               <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">${l('helpType', data.helpType) || '—'}</td>
             </tr>
             <tr>
