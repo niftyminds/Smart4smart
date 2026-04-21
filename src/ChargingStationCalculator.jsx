@@ -2055,12 +2055,22 @@ const ChargingStationCalculator = () => {
                     <p className="text-slate-600">
                       Pro zobrazení cenového odhadu vyplňte prosím vaše kontaktní údaje
                     </p>
-                    {intentData.helpType && intentData.helpType !== 'no_action' && (
-                      <p className="text-sm text-slate-500 mt-2">
-                        {intentData.helpType === 'want_offer' && 'Na základě vašich odpovědí vás bude kontaktovat náš specialista — připraví vám nabídku přímo na míru.'}
-                        {intentData.helpType === 'want_consultation' && 'Na základě vašich odpovědí vás bude kontaktovat náš specialista — domluvíme termín konzultace.'}
-                        {intentData.helpType === 'want_info' && 'Na základě vašich odpovědí vám zašleme podklady a materiály k instalaci.'}
-                      </p>
+                    {intentData.helpType && (
+                      <div className={`mt-4 px-5 py-4 rounded-xl border-2 text-sm font-medium flex items-start gap-3 ${
+                        intentData.helpType === 'no_action'
+                          ? 'bg-slate-50 border-slate-200 text-slate-600'
+                          : 'bg-blue-50 border-blue-300 text-blue-900'
+                      }`}>
+                        <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>
+                          {intentData.helpType === 'want_offer' && 'Po odeslání vás bude kontaktovat náš specialista a připraví vám nabídku přímo na míru.'}
+                          {intentData.helpType === 'want_consultation' && 'Po odeslání vás bude kontaktovat náš specialista a domluvíte si termín konzultace.'}
+                          {intentData.helpType === 'want_info' && 'Po odeslání vám zašleme podklady a materiály k instalaci.'}
+                          {intentData.helpType === 'no_action' && 'Po odeslání se zobrazí váš cenový odhad. Kdykoli nás můžete kontaktovat, pokud budete mít dotazy.'}
+                        </span>
+                      </div>
                     )}
                   </div>
 
