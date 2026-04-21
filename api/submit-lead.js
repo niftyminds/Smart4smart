@@ -18,7 +18,7 @@ const LABELS = {
   approvalStatus:    { schvaleno: 'Schváleno', zvazujeme: 'Zvažujeme', nesouhlas: 'Je nesouhlas' },
   commonPower:       { yes: 'Ano', no: 'Ne', unsure: 'Nevím, potřebuji poradit' },
   purchaseTimeline:  { 'do-3-mesicu': 'Do 3 měsíců', '3-6-mesicu': 'Za 3–6 měsíců', 'rok-a-dele': 'Za rok a déle', zjistuji: 'Zatím jen zjišťuji' },
-  helpType:          { want_offer: 'Nabídka na míru', want_info: 'Podklady k prostudování', no_action: 'Jen orientační cena' },
+  helpType:          { want_offer: 'Nabídka na míru', want_consultation: 'Konzultace', want_info: 'Podklady k prostudování', no_action: 'Jen orientační cena' },
 };
 
 const l = (field, value) => (value !== undefined && value !== null ? (LABELS[field]?.[value] ?? value) : '');

@@ -1352,6 +1352,7 @@ const ChargingStationCalculator = () => {
                     <div className="grid gap-3">
                       {[
                         { value: 'want_offer', label: 'Připravit nabídku na míru', desc: 'Projdeme to společně a připravíme konkrétní řešení pro vás' },
+                        { value: 'want_consultation', label: 'Domluvit konzultaci', desc: 'Probereme vaše potřeby a možnosti, bez závazku' },
                         { value: 'want_info', label: 'Zaslat podklady k prostudování', desc: 'Pošleme vám více informací a materiály k instalaci' },
                         { value: 'no_action', label: 'Zatím nepotřebuji nic dalšího', desc: 'Stačí mi orientační cena z kalkulátoru' },
                       ].map((opt) => (
@@ -1672,6 +1673,7 @@ const ChargingStationCalculator = () => {
                     <div className="grid gap-3">
                       {[
                         { value: 'want_offer', label: 'Připravit nabídku na míru', desc: 'Projdeme to společně a připravíme konkrétní řešení pro vás' },
+                        { value: 'want_consultation', label: 'Domluvit konzultaci', desc: 'Probereme vaše potřeby a možnosti, bez závazku' },
                         { value: 'want_info', label: 'Zaslat podklady k prostudování', desc: 'Pošleme vám více informací a materiály k instalaci' },
                         { value: 'no_action', label: 'Zatím nepotřebuji nic dalšího', desc: 'Stačí mi orientační cena z kalkulátoru' },
                       ].map((opt) => (
@@ -2001,6 +2003,7 @@ const ChargingStationCalculator = () => {
                     <div className="grid gap-3">
                       {[
                         { value: 'want_offer', label: 'Připravit nabídku na míru', desc: 'Projdeme to společně a připravíme konkrétní řešení pro vás' },
+                        { value: 'want_consultation', label: 'Domluvit konzultaci', desc: 'Probereme vaše potřeby a možnosti, bez závazku' },
                         { value: 'want_info', label: 'Zaslat podklady k prostudování', desc: 'Pošleme vám více informací a materiály k instalaci' },
                         { value: 'no_action', label: 'Zatím nepotřebuji nic dalšího', desc: 'Stačí mi orientační cena z kalkulátoru' },
                       ].map((opt) => (
@@ -2052,9 +2055,13 @@ const ChargingStationCalculator = () => {
                     <p className="text-slate-600">
                       Pro zobrazení cenového odhadu vyplňte prosím vaše kontaktní údaje
                     </p>
-                    <p className="text-sm text-slate-500 mt-2">
-                      Na základě vašich odpovědí vás může kontaktovat náš specialista — připraví vám nabídku přímo na míru.
-                    </p>
+                    {intentData.helpType && intentData.helpType !== 'no_action' && (
+                      <p className="text-sm text-slate-500 mt-2">
+                        {intentData.helpType === 'want_offer' && 'Na základě vašich odpovědí vás bude kontaktovat náš specialista — připraví vám nabídku přímo na míru.'}
+                        {intentData.helpType === 'want_consultation' && 'Na základě vašich odpovědí vás bude kontaktovat náš specialista — domluvíme termín konzultace.'}
+                        {intentData.helpType === 'want_info' && 'Na základě vašich odpovědí vám zašleme podklady a materiály k instalaci.'}
+                      </p>
+                    )}
                   </div>
 
                   <form onSubmit={handleLeadSubmit} className="space-y-6">
