@@ -128,6 +128,10 @@ const ChargingStationCalculator = () => {
     consentData: false,
     consentContact: false
   });
+  const [intentData, setIntentData] = useState({
+    purchaseTimeline: '',
+    helpType: ''
+  });
   const [formError, setFormError] = useState(null);
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
   const countryDropdownRef = React.useRef(null);
@@ -321,17 +325,21 @@ const ChargingStationCalculator = () => {
   };
 
   const isQuestionnaireComplete = () => {
+    const intentComplete = intentData.purchaseTimeline && intentData.helpType;
     if (segment === 'rodinny') {
-      return rodinnyData.chargingLocation &&
+      return intentComplete &&
+             rodinnyData.chargingLocation &&
              rodinnyData.parkingSpace &&
              rodinnyData.chargingSpeed &&
              rodinnyData.distance;
     } else if (segment === 'firemni') {
-      return firemniData.targetAudience &&
+      return intentComplete &&
+             firemniData.targetAudience &&
              firemniData.carCount &&
              firemniData.preparationState;
     } else if (segment === 'bytovy') {
-      return bytovyData.role &&
+      return intentComplete &&
+             bytovyData.role &&
              bytovyData.installLocation &&
              bytovyData.approvalStatus &&
              bytovyData.stationCount;
@@ -381,6 +389,8 @@ const ChargingStationCalculator = () => {
       email: leadData.email,
       phone: combinedPhone,
       estimatedPrice: finalPrice,
+      purchaseTimeline: intentData.purchaseTimeline,
+      helpType: intentData.helpType,
       questionnaire: segment === 'rodinny' ? rodinnyData :
                      segment === 'firemni' ? firemniData :
                      bytovyData
@@ -1301,6 +1311,61 @@ const ChargingStationCalculator = () => {
                     </div>
                   </div>
 
+                  {/* Intent Question A: Timeline */}
+                  <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-100">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-emerald-100 rounded-lg">
+                        <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <label className="text-lg font-semibold text-slate-900">Kdy plánujete instalaci?</label>
+                    </div>
+                    <div className="grid gap-3">
+                      {[
+                        { value: 'do-3-mesicu', label: 'Do 3 měsíců', desc: 'Mám jasno, chci co nejdříve' },
+                        { value: '3-6-mesicu', label: 'Za 3–6 měsíců', desc: 'Připravuji se, ale nepospíchám' },
+                        { value: 'rok-a-dele', label: 'Za rok a déle', desc: 'Zatím jen plánuji dopředu' },
+                        { value: 'zjistuji', label: 'Zatím jen zjišťuji možnosti', desc: 'Ještě nemám konkrétní plán' },
+                      ].map((opt) => (
+                        <label key={opt.value} className={`flex items-center p-4 rounded-xl cursor-pointer transition-all ${intentData.purchaseTimeline === opt.value ? 'bg-white shadow-md border-2 border-emerald-500' : 'bg-white/50 border-2 border-transparent hover:bg-white hover:shadow'}`}>
+                          <input type="radio" name="purchaseTimeline" value={opt.value} checked={intentData.purchaseTimeline === opt.value} onChange={(e) => setIntentData({ ...intentData, purchaseTimeline: e.target.value })} className="w-5 h-5 text-emerald-600" />
+                          <div className="ml-3">
+                            <div className="text-slate-900 font-medium">{opt.label}</div>
+                            <div className="text-sm text-slate-600">{opt.desc}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Intent Question B: How can we help */}
+                  <div className="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-2xl p-6 border border-indigo-100">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-indigo-100 rounded-lg">
+                        <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                      </div>
+                      <label className="text-lg font-semibold text-slate-900">Jak vám můžeme nejlépe pomoci?</label>
+                    </div>
+                    <div className="grid gap-3">
+                      {[
+                        { value: 'want_offer', label: 'Připravit nabídku na míru', desc: 'Projdeme to společně a připravíme konkrétní řešení pro vás' },
+                        { value: 'want_info', label: 'Zaslat podklady k prostudování', desc: 'Pošleme vám více informací a materiály k instalaci' },
+                        { value: 'no_action', label: 'Zatím nepotřebuji nic dalšího', desc: 'Stačí mi orientační cena z kalkulátoru' },
+                      ].map((opt) => (
+                        <label key={opt.value} className={`flex items-center p-4 rounded-xl cursor-pointer transition-all ${intentData.helpType === opt.value ? 'bg-white shadow-md border-2 border-indigo-500' : 'bg-white/50 border-2 border-transparent hover:bg-white hover:shadow'}`}>
+                          <input type="radio" name="helpType" value={opt.value} checked={intentData.helpType === opt.value} onChange={(e) => setIntentData({ ...intentData, helpType: e.target.value })} className="w-5 h-5 text-indigo-600" />
+                          <div className="ml-3">
+                            <div className="text-slate-900 font-medium">{opt.label}</div>
+                            <div className="text-sm text-slate-600">{opt.desc}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Continue Button */}
                   <button
                     onClick={handleContinueToLead}
@@ -1563,6 +1628,61 @@ const ChargingStationCalculator = () => {
                           </label>
                         ))}
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Intent Question A: Timeline */}
+                  <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-100">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-emerald-100 rounded-lg">
+                        <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <label className="text-lg font-semibold text-slate-900">Kdy plánujete instalaci?</label>
+                    </div>
+                    <div className="grid gap-3">
+                      {[
+                        { value: 'do-3-mesicu', label: 'Do 3 měsíců', desc: 'Mám jasno, chci co nejdříve' },
+                        { value: '3-6-mesicu', label: 'Za 3–6 měsíců', desc: 'Připravuji se, ale nepospíchám' },
+                        { value: 'rok-a-dele', label: 'Za rok a déle', desc: 'Zatím jen plánuji dopředu' },
+                        { value: 'zjistuji', label: 'Zatím jen zjišťuji možnosti', desc: 'Ještě nemám konkrétní plán' },
+                      ].map((opt) => (
+                        <label key={opt.value} className={`flex items-center p-4 rounded-xl cursor-pointer transition-all ${intentData.purchaseTimeline === opt.value ? 'bg-white shadow-md border-2 border-emerald-500' : 'bg-white/50 border-2 border-transparent hover:bg-white hover:shadow'}`}>
+                          <input type="radio" name="purchaseTimeline" value={opt.value} checked={intentData.purchaseTimeline === opt.value} onChange={(e) => setIntentData({ ...intentData, purchaseTimeline: e.target.value })} className="w-5 h-5 text-emerald-600" />
+                          <div className="ml-3">
+                            <div className="text-slate-900 font-medium">{opt.label}</div>
+                            <div className="text-sm text-slate-600">{opt.desc}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Intent Question B: How can we help */}
+                  <div className="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-2xl p-6 border border-indigo-100">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-indigo-100 rounded-lg">
+                        <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                      </div>
+                      <label className="text-lg font-semibold text-slate-900">Jak vám můžeme nejlépe pomoci?</label>
+                    </div>
+                    <div className="grid gap-3">
+                      {[
+                        { value: 'want_offer', label: 'Připravit nabídku na míru', desc: 'Projdeme to společně a připravíme konkrétní řešení pro vás' },
+                        { value: 'want_info', label: 'Zaslat podklady k prostudování', desc: 'Pošleme vám více informací a materiály k instalaci' },
+                        { value: 'no_action', label: 'Zatím nepotřebuji nic dalšího', desc: 'Stačí mi orientační cena z kalkulátoru' },
+                      ].map((opt) => (
+                        <label key={opt.value} className={`flex items-center p-4 rounded-xl cursor-pointer transition-all ${intentData.helpType === opt.value ? 'bg-white shadow-md border-2 border-indigo-500' : 'bg-white/50 border-2 border-transparent hover:bg-white hover:shadow'}`}>
+                          <input type="radio" name="helpType" value={opt.value} checked={intentData.helpType === opt.value} onChange={(e) => setIntentData({ ...intentData, helpType: e.target.value })} className="w-5 h-5 text-indigo-600" />
+                          <div className="ml-3">
+                            <div className="text-slate-900 font-medium">{opt.label}</div>
+                            <div className="text-sm text-slate-600">{opt.desc}</div>
+                          </div>
+                        </label>
+                      ))}
                     </div>
                   </div>
 
@@ -1840,6 +1960,61 @@ const ChargingStationCalculator = () => {
                     </div>
                   </div>
 
+                  {/* Intent Question A: Timeline */}
+                  <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-100">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-emerald-100 rounded-lg">
+                        <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <label className="text-lg font-semibold text-slate-900">Kdy plánujete instalaci?</label>
+                    </div>
+                    <div className="grid gap-3">
+                      {[
+                        { value: 'do-3-mesicu', label: 'Do 3 měsíců', desc: 'Mám jasno, chci co nejdříve' },
+                        { value: '3-6-mesicu', label: 'Za 3–6 měsíců', desc: 'Připravuji se, ale nepospíchám' },
+                        { value: 'rok-a-dele', label: 'Za rok a déle', desc: 'Zatím jen plánuji dopředu' },
+                        { value: 'zjistuji', label: 'Zatím jen zjišťuji možnosti', desc: 'Ještě nemám konkrétní plán' },
+                      ].map((opt) => (
+                        <label key={opt.value} className={`flex items-center p-4 rounded-xl cursor-pointer transition-all ${intentData.purchaseTimeline === opt.value ? 'bg-white shadow-md border-2 border-emerald-500' : 'bg-white/50 border-2 border-transparent hover:bg-white hover:shadow'}`}>
+                          <input type="radio" name="purchaseTimeline" value={opt.value} checked={intentData.purchaseTimeline === opt.value} onChange={(e) => setIntentData({ ...intentData, purchaseTimeline: e.target.value })} className="w-5 h-5 text-emerald-600" />
+                          <div className="ml-3">
+                            <div className="text-slate-900 font-medium">{opt.label}</div>
+                            <div className="text-sm text-slate-600">{opt.desc}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Intent Question B: How can we help */}
+                  <div className="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-2xl p-6 border border-indigo-100">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-indigo-100 rounded-lg">
+                        <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                      </div>
+                      <label className="text-lg font-semibold text-slate-900">Jak vám můžeme nejlépe pomoci?</label>
+                    </div>
+                    <div className="grid gap-3">
+                      {[
+                        { value: 'want_offer', label: 'Připravit nabídku na míru', desc: 'Projdeme to společně a připravíme konkrétní řešení pro vás' },
+                        { value: 'want_info', label: 'Zaslat podklady k prostudování', desc: 'Pošleme vám více informací a materiály k instalaci' },
+                        { value: 'no_action', label: 'Zatím nepotřebuji nic dalšího', desc: 'Stačí mi orientační cena z kalkulátoru' },
+                      ].map((opt) => (
+                        <label key={opt.value} className={`flex items-center p-4 rounded-xl cursor-pointer transition-all ${intentData.helpType === opt.value ? 'bg-white shadow-md border-2 border-indigo-500' : 'bg-white/50 border-2 border-transparent hover:bg-white hover:shadow'}`}>
+                          <input type="radio" name="helpType" value={opt.value} checked={intentData.helpType === opt.value} onChange={(e) => setIntentData({ ...intentData, helpType: e.target.value })} className="w-5 h-5 text-indigo-600" />
+                          <div className="ml-3">
+                            <div className="text-slate-900 font-medium">{opt.label}</div>
+                            <div className="text-sm text-slate-600">{opt.desc}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Continue Button */}
                   <button
                     onClick={handleContinueToLead}
@@ -1876,6 +2051,9 @@ const ChargingStationCalculator = () => {
                     </h2>
                     <p className="text-slate-600">
                       Pro zobrazení cenového odhadu vyplňte prosím vaše kontaktní údaje
+                    </p>
+                    <p className="text-sm text-slate-500 mt-2">
+                      Na základě vašich odpovědí vás může kontaktovat náš specialista — připraví vám nabídku přímo na míru.
                     </p>
                   </div>
 
@@ -2213,6 +2391,7 @@ const ChargingStationCalculator = () => {
                         commonPower: ''
                       });
                       setLeadData({ email: '', phoneCountry: '+420', phoneNumber: '', consentData: false, consentContact: false });
+                      setIntentData({ purchaseTimeline: '', helpType: '' });
                     }}
                     className="w-full border-2 border-slate-300 text-slate-700 hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50 font-semibold py-4 px-6 rounded-2xl transition-all duration-200"
                   >

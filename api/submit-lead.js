@@ -5,18 +5,20 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // --- Value → Czech label lookup maps ---
 const LABELS = {
-  chargingLocation: { dum: 'Dům', chata: 'Chata', garaz: 'Garáž jinde' },
-  parkingSpace:     { pozemek: 'Pozemek', garaz: 'Garáž', neresim: 'Neřeším' },
-  chargingSpeed:    { '11kw': '11 kW', '22kw': '22 kW', nevim: 'Nevím' },
-  distance:         { '0-5': 'Do 5 metrů', '5-15': '5–15 metrů', '15+': '15+ metrů' },
-  targetAudience:   { flotila: 'Flotila', zamestnanci: 'Zaměstnanci', klienti: 'Klienti', kombinace: 'Kombinace' },
-  carCount:         { '1-2': '1–2 auta', '3-5': '3–5 aut', '6-12': '6–12 aut', '12+': '12+ aut' },
-  dcStation:        { '': 'Bez DC stanice', '40-120': '40–120 kW', '160-240': '160–240 kW', '400': '400 kW' },
-  preparationState: { ready: 'Dostatečná kapacita', capacity: 'Kapacita může být nedostatečná', other: 'Nejsme si jistí' },
-  role:             { predseda: 'Předseda SVJ', facility: 'Facility manager', vlastnik: 'Vlastník bytu', jine: 'Jiné' },
-  installLocation:  { garaze: 'Garáže', venku: 'Venkovní parkoviště', nevim: 'Nevím' },
-  approvalStatus:   { schvaleno: 'Schváleno', zvazujeme: 'Zvažujeme', nesouhlas: 'Je nesouhlas' },
-  commonPower:      { yes: 'Ano', no: 'Ne', unsure: 'Nevím, potřebuji poradit' },
+  chargingLocation:  { dum: 'Dům', chata: 'Chata', garaz: 'Garáž jinde' },
+  parkingSpace:      { pozemek: 'Pozemek', garaz: 'Garáž', neresim: 'Neřeším' },
+  chargingSpeed:     { '11kw': '11 kW', '22kw': '22 kW', nevim: 'Nevím' },
+  distance:          { '0-5': 'Do 5 metrů', '5-15': '5–15 metrů', '15+': '15+ metrů' },
+  targetAudience:    { flotila: 'Flotila', zamestnanci: 'Zaměstnanci', klienti: 'Klienti', kombinace: 'Kombinace' },
+  carCount:          { '1-2': '1–2 auta', '3-5': '3–5 aut', '6-12': '6–12 aut', '12+': '12+ aut' },
+  dcStation:         { '': 'Bez DC stanice', '40-120': '40–120 kW', '160-240': '160–240 kW', '400': '400 kW' },
+  preparationState:  { ready: 'Dostatečná kapacita', capacity: 'Kapacita může být nedostatečná', other: 'Nejsme si jistí' },
+  role:              { predseda: 'Předseda SVJ', facility: 'Facility manager', vlastnik: 'Vlastník bytu', jine: 'Jiné' },
+  installLocation:   { garaze: 'Garáže', venku: 'Venkovní parkoviště', nevim: 'Nevím' },
+  approvalStatus:    { schvaleno: 'Schváleno', zvazujeme: 'Zvažujeme', nesouhlas: 'Je nesouhlas' },
+  commonPower:       { yes: 'Ano', no: 'Ne', unsure: 'Nevím, potřebuji poradit' },
+  purchaseTimeline:  { 'do-3-mesicu': 'Do 3 měsíců', '3-6-mesicu': 'Za 3–6 měsíců', 'rok-a-dele': 'Za rok a déle', zjistuji: 'Zatím jen zjišťuji' },
+  helpType:          { want_offer: 'Nabídka na míru', want_info: 'Podklady k prostudování', no_action: 'Jen orientační cena' },
 };
 
 const l = (field, value) => (value !== undefined && value !== null ? (LABELS[field]?.[value] ?? value) : '');
@@ -29,6 +31,8 @@ const HEADERS = [
   'Počet vozů', 'Výkon DC stanice (kW)', 'Stav přípravy', 'Rozúčtování nákladů', 'Cílová skupina',
   // Bytový dům
   'Počet stanic', 'Společný výkon k dispozici', 'Role žadatele', 'Místo instalace', 'Stav schválení',
+  // Intent (všechny segmenty)
+  'Kdy plánuje instalaci', 'Jak může pomoci',
 ];
 
 // --- Segment-specific sheets ---
@@ -38,14 +42,16 @@ const SEGMENT_SHEETS = {
     headers: [
       'Datum', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
       'Vzdálenost od rozvaděče', 'Smart funkce', 'Místo nabíjení', 'Parkovací místo', 'Rychlost nabíjení',
+      'Kdy plánuje instalaci', 'Jak může pomoci',
     ],
-    priceColIndex: 3, // column D
+    priceColIndex: 3,
   },
   firemni: {
     name: 'Firemní prostředí',
     headers: [
       'Datum', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
       'Počet vozů', 'Výkon DC stanice (kW)', 'Stav přípravy', 'Rozúčtování nákladů', 'Cílová skupina',
+      'Kdy plánuje instalaci', 'Jak může pomoci',
     ],
     priceColIndex: 3,
   },
@@ -54,6 +60,7 @@ const SEGMENT_SHEETS = {
     headers: [
       'Datum', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
       'Počet stanic', 'Společný výkon k dispozici', 'Role žadatele', 'Místo instalace', 'Stav schválení',
+      'Kdy plánuje instalaci', 'Jak může pomoci',
     ],
     priceColIndex: 3,
   },
@@ -206,6 +213,11 @@ function buildSegmentRow(segment, data) {
   const date = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Prague' });
   const common = [date, data.email, `'${data.phone}`, data.estimatedPrice || ''];
 
+  const intentCols = [
+    l('purchaseTimeline', data.purchaseTimeline),
+    l('helpType', data.helpType),
+  ];
+
   if (segment === 'rodinny') {
     const smartList = [
       sf.dynamicPower && 'Dynamické řízení výkonu + RFID',
@@ -220,6 +232,7 @@ function buildSegmentRow(segment, data) {
       l('chargingLocation', q.chargingLocation),
       l('parkingSpace', q.parkingSpace),
       l('chargingSpeed', q.chargingSpeed),
+      ...intentCols,
     ];
   }
 
@@ -231,6 +244,7 @@ function buildSegmentRow(segment, data) {
       l('preparationState', q.preparationState),
       q.costAccounting ? 'Ano' : 'Ne',
       l('targetAudience', q.targetAudience),
+      ...intentCols,
     ];
   }
 
@@ -242,6 +256,7 @@ function buildSegmentRow(segment, data) {
       l('role', q.role),
       l('installLocation', q.installLocation),
       l('approvalStatus', q.approvalStatus),
+      ...intentCols,
     ];
   }
 
@@ -302,11 +317,13 @@ async function appendToSheet(data) {
     isBytovy ? l('role', q.role) : '',                                   // R: Role žadatele
     isBytovy ? l('installLocation', q.installLocation) : '',             // S: Místo instalace
     isBytovy ? l('approvalStatus', q.approvalStatus) : '',               // T: Stav schválení
+    l('purchaseTimeline', data.purchaseTimeline),                         // U: Kdy plánuje instalaci
+    l('helpType', data.helpType),                                         // V: Jak může pomoci
   ];
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: `'${sheetName}'!A:T`,
+    range: `'${sheetName}'!A:V`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
@@ -319,7 +336,7 @@ async function appendToSheet(data) {
     const segRow = buildSegmentRow(data.segment, data);
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: `'${seg.name}'!A:I`,
+      range: `'${seg.name}'!A:K`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [segRow] },
     });
@@ -365,6 +382,14 @@ async function sendNotificationEmail(data) {
             <tr>
               <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #64748b;">Odhadovaná cena</td>
               <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-size: 18px; font-weight: bold; color: #2563eb;">${priceFormatted}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #64748b; width: 40%;">Kdy plánuje instalaci</td>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">${l('purchaseTimeline', data.purchaseTimeline) || '—'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #64748b;">Jak může pomoci</td>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e2e8f0;">${l('helpType', data.helpType) || '—'}</td>
             </tr>
             <tr>
               <td colspan="2" style="padding: 16px 0 8px; font-weight: bold; color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Dotazník</td>
