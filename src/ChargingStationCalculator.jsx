@@ -2069,9 +2069,9 @@ const ChargingStationCalculator = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span>
-                          {intentData.helpType === 'want_offer' && 'Po odeslání vás bude kontaktovat náš specialista a připraví vám nabídku přímo na míru.'}
-                          {intentData.helpType === 'want_consultation' && 'Po odeslání vás bude kontaktovat náš specialista a domluvíte si termín konzultace.'}
-                          {intentData.helpType === 'want_info' && 'Po odeslání vám zašleme podklady a materiály k instalaci.'}
+                          {intentData.helpType === 'want_offer' && 'Na základě Vašich odpovědí pro vás připravíme nabídku přímo na míru. Náš specialista vás bude brzy kontaktovat.'}
+                          {intentData.helpType === 'want_consultation' && 'Na základě Vašich odpovědí vás bude kontaktovat náš specialista a domluvíte si termín konzultace.'}
+                          {intentData.helpType === 'want_info' && 'Na základě Vašich odpovědí vám zašleme podklady a materiály k instalaci.'}
                           {intentData.helpType === 'no_action' && 'Po odeslání se zobrazí váš cenový odhad. Kdykoli nás můžete kontaktovat, pokud budete mít dotazy.'}
                         </span>
                       </div>
