@@ -8,7 +8,8 @@
     "googleapis": "^171.4.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "resend": "^6.9.4"
+    "resend": "^6.9.4",
+    "vercel": "^51.8.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",

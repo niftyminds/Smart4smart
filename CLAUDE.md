@@ -54,14 +54,14 @@ NOTIFICATION_EMAIL             # marketing@niftyminds.cz
 ### Záložky
 | Název záložky | Obsah |
 |---------------|-------|
-| `VŠECHNY TYPY` | Hlavní přehled — všechny segmenty, 20 sloupců (A–T) |
-| `Rodinný dům` | Pouze rodinny leads, 9 sloupců |
-| `Firemní prostředí` | Pouze firemni leads, 9 sloupců |
-| `Bytový dům` | Pouze bytovy leads, 9 sloupců |
+| `VŠECHNY TYPY` | Hlavní přehled — všechny segmenty, 22 sloupců (A–V) |
+| `Rodinný dům` | Pouze rodinny leads, 11 sloupců |
+| `Firemní prostředí` | Pouze firemni leads, 11 sloupců |
+| `Bytový dům` | Pouze bytovy leads, 11 sloupců |
 
 Přejmenování hlavní záložky: změnit název v Sheets + aktualizovat `GOOGLE_SHEET_NAME` v Vercel env (a `.env` lokálně).
 
-### Sloupce hlavní záložky (A–T)
+### Sloupce hlavní záložky (A–V)
 | Sl. | Název | Typ |
 |-----|-------|-----|
 | A | Datum | datetime string (`YYYY-MM-DD HH:MM:SS`) |
@@ -84,8 +84,29 @@ Přejmenování hlavní záložky: změnit název v Sheets + aktualizovat `GOOGL
 | R | Role žadatele | bytovy |
 | S | Místo instalace | bytovy |
 | T | Stav schválení | bytovy |
+| U | Termín instalace | všechny segmenty — `intentData.purchaseTimeline` |
+| V | Zájem leada | všechny segmenty — `intentData.helpType` |
 
 Nevyplněné buňky (jiný segment) → prázdný string `''`.
+
+### Intent data (záměr leada)
+Dvě otázky zobrazené na konci dotazníku ve všech třech segmentech, těsně před kontaktním formulářem. Odpovědi se zapisují do sloupců U a V (hlavní záložka) a do posledních dvou sloupců každé segmentové záložky.
+
+**Termín instalace** (`purchaseTimeline`):
+| Hodnota | Label v Sheets |
+|---------|---------------|
+| `do-3-mesicu` | Do 3 měsíců |
+| `3-6-mesicu` | Za 3–6 měsíců |
+| `rok-a-dele` | Za rok a déle |
+| `zjistuji` | Zatím jen zjišťuji |
+
+**Zájem leada** (`helpType`):
+| Hodnota | Label v Sheets | Callout text v kontaktním formuláři |
+|---------|---------------|-------------------------------------|
+| `want_offer` | Nabídka na míru | „Po odeslání vás bude kontaktovat náš specialista a připraví vám nabídku přímo na míru." |
+| `want_consultation` | Konzultace | „Po odeslání vás bude kontaktovat náš specialista a domluvíte si termín konzultace." |
+| `want_info` | Podklady k prostudování | „Po odeslání vám zašleme podklady a materiály k instalaci." |
+| `no_action` | Jen orientační cena | „Po odeslání se zobrazí váš cenový odhad…" (šedý box) |
 
 ## Formulář — kontaktní data
 - **Email**: standard text input
@@ -95,6 +116,7 @@ Nevyplněné buňky (jiný segment) → prázdný string `''`.
   - Backend validace: `/^\+\d{10,15}$/`
   - Do Sheets posíláno jako `'${phone}` (apostrofem, aby Sheets nebral `+` jako formuli)
 - **Reset formuláře** (`setLeadData`): vždy používat `{ email: '', phoneCountry: '+420', phoneNumber: '', consentData: false, consentContact: false }` — starší field `phone` už neexistuje
+- **Reset intent dat** (`setIntentData`): vždy resetovat spolu s `setLeadData` — `{ purchaseTimeline: '', helpType: '' }`
 
 ## Emaily
 - **Notifikační email**: odesílá se při každém novém leadu na `marketing@niftyminds.cz`
@@ -140,10 +162,45 @@ generate_lead          ← odeslal formulář (obsahuje user_data pro Enhanced C
 view_price_result      ← viděl výsledek s cenou
 ```
 
-### `generate_lead` — user_data pro Enhanced Conversions
+### `generate_lead` — payload
 ```js
-user_data: {
-  email: leadData.email.toLowerCase().trim(),  // Google Enhanced Conversions
-  phone: combinedPhone.replace('+', ''),        // Meta: formát 420123456789
-}
+pushToDataLayer('generate_lead', {
+  segment: segmentLabel,
+  estimated_price: finalPrice,
+  currency: 'CZK',
+  purchase_timeline: intentData.purchaseTimeline,  // hodnoty: do-3-mesicu | 3-6-mesicu | rok-a-dele | zjistuji
+  help_type: intentData.helpType,                  // hodnoty: want_offer | want_consultation | want_info | no_action
+  user_data: {
+    email: leadData.email.toLowerCase().trim(),    // Google Enhanced Conversions
+    phone: combinedPhone.replace('+', ''),         // Meta: formát 420123456789
+  }
+});
 ```
+
+### GTM — intent qualification (Meta Pixel, GA4, Google Ads)
+GTM container: `GTM-PHW2TK4N` (kalkulatornabijecek.cz), workspace Default (ID: 12)
+
+**Proměnné:**
+| Název | DLV klíč | ID |
+|-------|----------|----|
+| `DLV - Purchase Timeline` | `purchase_timeline` | 43 |
+| `DLV - Help Type` | `help_type` | 44 |
+
+**Trigger:**
+- `CE - Generate Lead - Qualified` (ID: 45) — event `generate_lead`, podmínky AND:
+  - `{{DLV - Purchase Timeline}}` matchesRegex `^(do-3-mesicu|3-6-mesicu)$`
+  - `{{DLV - Help Type}}` matchesRegex `^(want_offer|want_consultation)$`
+
+**Tagy — co kam posílá:**
+| Tag | Event | Trigger | Poznámka |
+|-----|-------|---------|----------|
+| Meta Pixel - Generate Lead | `Lead` (standard) | CE - Generate Lead | +`purchase_timeline`, `help_type` v custom params |
+| Meta Pixel - Qualified Lead | `QualifiedLead` (custom) | CE - Generate Lead - Qualified | pro optimalizaci kampaní |
+| GA4 Event - Generate Lead | `generate_lead` | CE - Generate Lead | +`purchase_timeline`, `help_type` |
+| GA4 Event - Qualified Lead | `qualified_lead` | CE - Generate Lead - Qualified | samostatná GA4 událost |
+| Google Ads Conversion - Generate Lead | konverze | CE - Generate Lead | +`conversionValue`, `currencyCode: CZK` |
+| Google Ads Conversion - Generate Qualified Lead | konverze | CE - Generate Lead - Qualified | +`conversionValue`, `currencyCode: CZK` |
+
+**GA4 Custom Dimensions** (nutné zaregistrovat v GA4 Admin → Custom definitions):
+- `purchase_timeline` (event-scoped)
+- `help_type` (event-scoped)

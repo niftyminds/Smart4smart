@@ -401,6 +401,8 @@ const ChargingStationCalculator = () => {
       segment: segmentLabel,
       estimated_price: finalPrice,
       currency: 'CZK',
+      purchase_timeline: intentData.purchaseTimeline,
+      help_type: intentData.helpType,
       user_data: {
         email: leadData.email.toLowerCase().trim(),
         phone: combinedPhone.replace('+', ''), // Meta format: 420123456789
