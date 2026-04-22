@@ -478,6 +478,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields: email, phone, segment' });
   }
 
+  // Email format check
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    return res.status(400).json({ error: 'invalid_email' });
+  }
+
   // Phone sanity check: starts with + followed by digits only
   if (!/^\+\d{10,15}$/.test(data.phone)) {
     return res.status(400).json({ error: 'invalid_phone' });
