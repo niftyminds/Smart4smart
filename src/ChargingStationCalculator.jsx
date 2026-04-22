@@ -363,7 +363,9 @@ const ChargingStationCalculator = () => {
       pushToDataLayer('complete_questionnaire', {
         segment: segmentLabel,
         estimated_price: calculatePrice(),
-        currency: 'CZK'
+        currency: 'CZK',
+        purchase_timeline: intentData.purchaseTimeline,
+        help_type: intentData.helpType,
       });
 
       setStep('lead');
