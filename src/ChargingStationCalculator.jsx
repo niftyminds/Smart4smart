@@ -134,6 +134,17 @@ const ChargingStationCalculator = () => {
     purchaseTimeline: '',
     helpType: ''
   });
+
+  const [utmData] = useState(() => {
+    const p = new URLSearchParams(window.location.search);
+    return {
+      utm_source:   p.get('utm_source')   || '',
+      utm_medium:   p.get('utm_medium')   || '',
+      utm_campaign: p.get('utm_campaign') || '',
+      utm_adset:    p.get('utm_adset')    || '',
+      utm_content:  p.get('utm_content')  || '',
+    };
+  });
   const [formError, setFormError] = useState(null);
   const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
   const countryDropdownRef = React.useRef(null);
@@ -397,7 +408,8 @@ const ChargingStationCalculator = () => {
       helpType: intentData.helpType,
       questionnaire: segment === 'rodinny' ? rodinnyData :
                      segment === 'firemni' ? firemniData :
-                     bytovyData
+                     bytovyData,
+      utm: utmData,
     };
 
     // GTM Event: Lead Conversion

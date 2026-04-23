@@ -33,6 +33,8 @@ const HEADERS = [
   'Počet stanic', 'Společný výkon k dispozici', 'Role žadatele', 'Místo instalace', 'Stav schválení',
   // Intent (všechny segmenty)
   'Termín instalace', 'Zájem leada',
+  // UTM (všechny segmenty)
+  'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Ad Set', 'UTM Content',
 ];
 
 // --- Segment-specific sheets ---
@@ -43,6 +45,7 @@ const SEGMENT_SHEETS = {
       'Datum', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
       'Vzdálenost od rozvaděče', 'Smart funkce', 'Místo nabíjení', 'Parkovací místo', 'Rychlost nabíjení',
       'Termín instalace', 'Zájem leada',
+      'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Ad Set', 'UTM Content',
     ],
     priceColIndex: 3,
   },
@@ -52,6 +55,7 @@ const SEGMENT_SHEETS = {
       'Datum', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
       'Počet vozů', 'Výkon DC stanice (kW)', 'Stav přípravy', 'Rozúčtování nákladů', 'Cílová skupina',
       'Termín instalace', 'Zájem leada',
+      'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Ad Set', 'UTM Content',
     ],
     priceColIndex: 3,
   },
@@ -61,6 +65,7 @@ const SEGMENT_SHEETS = {
       'Datum', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
       'Počet stanic', 'Společný výkon k dispozici', 'Role žadatele', 'Místo instalace', 'Stav schválení',
       'Termín instalace', 'Zájem leada',
+      'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Ad Set', 'UTM Content',
     ],
     priceColIndex: 3,
   },
@@ -210,12 +215,21 @@ async function ensureHeaders(sheets, spreadsheetId, sheetName, expectedHeaders, 
 function buildSegmentRow(segment, data) {
   const q = data.questionnaire || {};
   const sf = q.smartFunctions || {};
+  const utm = data.utm || {};
   const date = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Prague' });
   const common = [date, data.email, `'${data.phone}`, data.estimatedPrice || ''];
 
   const intentCols = [
     l('purchaseTimeline', data.purchaseTimeline),
     l('helpType', data.helpType),
+  ];
+
+  const utmCols = [
+    utm.utm_source   || '',
+    utm.utm_medium   || '',
+    utm.utm_campaign || '',
+    utm.utm_adset    || '',
+    utm.utm_content  || '',
   ];
 
   if (segment === 'rodinny') {
@@ -233,6 +247,7 @@ function buildSegmentRow(segment, data) {
       l('parkingSpace', q.parkingSpace),
       l('chargingSpeed', q.chargingSpeed),
       ...intentCols,
+      ...utmCols,
     ];
   }
 
@@ -245,6 +260,7 @@ function buildSegmentRow(segment, data) {
       q.costAccounting ? 'Ano' : 'Ne',
       l('targetAudience', q.targetAudience),
       ...intentCols,
+      ...utmCols,
     ];
   }
 
@@ -257,6 +273,7 @@ function buildSegmentRow(segment, data) {
       l('installLocation', q.installLocation),
       l('approvalStatus', q.approvalStatus),
       ...intentCols,
+      ...utmCols,
     ];
   }
 
@@ -281,6 +298,7 @@ async function appendToSheet(data) {
 
   const q = data.questionnaire || {};
   const sf = q.smartFunctions || {};
+  const utm = data.utm || {};
 
   const smartFunctions = [
     sf.dynamicPower && 'Dynamické řízení výkonu + RFID',
@@ -319,11 +337,16 @@ async function appendToSheet(data) {
     isBytovy ? l('approvalStatus', q.approvalStatus) : '',               // T: Stav schválení
     l('purchaseTimeline', data.purchaseTimeline),                         // U: Termín instalace
     l('helpType', data.helpType),                                         // V: Zájem leada
+    utm.utm_source   || '',                                               // W: UTM Source
+    utm.utm_medium   || '',                                               // X: UTM Medium
+    utm.utm_campaign || '',                                               // Y: UTM Campaign
+    utm.utm_adset    || '',                                               // Z: UTM Ad Set
+    utm.utm_content  || '',                                               // AA: UTM Content
   ];
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: `'${sheetName}'!A:V`,
+    range: `'${sheetName}'!A:AA`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
@@ -336,7 +359,7 @@ async function appendToSheet(data) {
     const segRow = buildSegmentRow(data.segment, data);
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: `'${seg.name}'!A:K`,
+      range: `'${seg.name}'!A:P`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [segRow] },
     });

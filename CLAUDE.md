@@ -55,13 +55,13 @@ NOTIFICATION_EMAIL             # marketing@niftyminds.cz
 | Název záložky | Obsah |
 |---------------|-------|
 | `VŠECHNY TYPY` | Hlavní přehled — všechny segmenty, 22 sloupců (A–V) |
-| `Rodinný dům` | Pouze rodinny leads, 11 sloupců |
-| `Firemní prostředí` | Pouze firemni leads, 11 sloupců |
-| `Bytový dům` | Pouze bytovy leads, 11 sloupců |
+| `Rodinný dům` | Pouze rodinny leads, 16 sloupců |
+| `Firemní prostředí` | Pouze firemni leads, 16 sloupců |
+| `Bytový dům` | Pouze bytovy leads, 16 sloupců |
 
 Přejmenování hlavní záložky: změnit název v Sheets + aktualizovat `GOOGLE_SHEET_NAME` v Vercel env (a `.env` lokálně).
 
-### Sloupce hlavní záložky (A–V)
+### Sloupce hlavní záložky (A–AA)
 | Sl. | Název | Typ |
 |-----|-------|-----|
 | A | Datum | datetime string (`YYYY-MM-DD HH:MM:SS`) |
@@ -86,8 +86,13 @@ Přejmenování hlavní záložky: změnit název v Sheets + aktualizovat `GOOGL
 | T | Stav schválení | bytovy |
 | U | Termín instalace | všechny segmenty — `intentData.purchaseTimeline` |
 | V | Zájem leada | všechny segmenty — `intentData.helpType` |
+| W | UTM Source | všechny segmenty — `utm.utm_source` |
+| X | UTM Medium | všechny segmenty — `utm.utm_medium` |
+| Y | UTM Campaign | všechny segmenty — `utm.utm_campaign` |
+| Z | UTM Ad Set | všechny segmenty — `utm.utm_adset` (Meta: `{{adset.name}}`) |
+| AA | UTM Content | všechny segmenty — `utm.utm_content` |
 
-Nevyplněné buňky (jiný segment) → prázdný string `''`.
+Nevyplněné buňky (jiný segment nebo chybějící UTM) → prázdný string `''`.
 
 ### Intent data (záměr leada)
 Dvě otázky zobrazené na konci dotazníku ve všech třech segmentech, těsně před kontaktním formulářem. Odpovědi se zapisují do sloupců U a V (hlavní záložka) a do posledních dvou sloupců každé segmentové záložky.
@@ -108,12 +113,32 @@ Dvě otázky zobrazené na konci dotazníku ve všech třech segmentech, těsně
 | `want_info` | Podklady k prostudování | „Po odeslání vám zašleme podklady a materiály k instalaci." |
 | `no_action` | Jen orientační cena | „Po odeslání se zobrazí váš cenový odhad…" (šedý box) |
 
+### UTM parametry (zdroj návštěvníka)
+Zachycují se při načtení stránky z URL (`new URLSearchParams(window.location.search)`), uloží se do `utmData` state a odešlou se spolu s formulářem v poli `utm`. Zapisují se do sloupců W–AA (hlavní záložka) a do posledních 5 sloupců každé segmentové záložky.
+
+**Aktuální UTM šablona v Meta Ads:**
+```
+utm_source=facebook&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}
+```
+Pro přidání názvu ad setu přidat: `&utm_adset={{adset.name}}`
+
+**Pole `utm` v request body:**
+| Klíč | URL param | Příklad |
+|------|-----------|---------|
+| `utm_source` | `utm_source` | `facebook` |
+| `utm_medium` | `utm_medium` | `paid` |
+| `utm_campaign` | `utm_campaign` | název kampaně |
+| `utm_adset` | `utm_adset` | název ad setu |
+| `utm_content` | `utm_content` | název inzerátu |
+
 ## Formulář — kontaktní data
 - **Email**: standard text input
+  - Frontend validace: `type="email"` (prohlížeč)
+  - Backend validace: `/^[^\s@]+@[^\s@]+\.[^\s@]+$/` → `{ error: 'invalid_email' }`
 - **Telefon**: dropdown předvolby (`+420` / `+421`) + input pro číslo (9 číslic)
   - Normalizace: `phoneNumber.replace(/[\s\-]/g, '')` před odesláním
   - Frontend validace: přesně 9 číslic, jinak inline chybová hláška
-  - Backend validace: `/^\+\d{10,15}$/`
+  - Backend validace: `/^\+\d{10,15}$/` → `{ error: 'invalid_phone' }`
   - Do Sheets posíláno jako `'${phone}` (apostrofem, aby Sheets nebral `+` jako formuli)
 - **Reset formuláře** (`setLeadData`): vždy používat `{ email: '', phoneCountry: '+420', phoneNumber: '', consentData: false, consentContact: false }` — starší field `phone` už neexistuje
 - **Reset intent dat** (`setIntentData`): vždy resetovat spolu s `setLeadData` — `{ purchaseTimeline: '', helpType: '' }`
@@ -194,12 +219,23 @@ GTM container: `GTM-PHW2TK4N` (kalkulatornabijecek.cz), workspace Default (ID: 1
 **Tagy — co kam posílá:**
 | Tag | Event | Trigger | Poznámka |
 |-----|-------|---------|----------|
-| Meta Pixel - Generate Lead | `Lead` (standard) | CE - Generate Lead | +`purchase_timeline`, `help_type` v custom params |
-| Meta Pixel - Qualified Lead | `QualifiedLead` (custom) | CE - Generate Lead - Qualified | pro optimalizaci kampaní |
+| Meta Pixel - Complete Questionnaire | `complete_questionnaire` | CE - Complete Questionnaire | +`purchase_timeline`, `help_type` |
+| GA4 Event - Complete Questionnaire | `complete_questionnaire` | CE - Complete Questionnaire | +`purchase_timeline`, `help_type` |
+| Meta Pixel - Start Contact Form | `start_contact_form` | CE - Start Contact Form | +`purchase_timeline`, `help_type` |
+| GA4 Event - Start Contact Form | `start_contact_form` | CE - Start Contact Form | +`purchase_timeline`, `help_type` |
+| Meta Pixel - Generate Lead | `Lead` (standard) | CE - Generate Lead | +`purchase_timeline`, `help_type` |
 | GA4 Event - Generate Lead | `generate_lead` | CE - Generate Lead | +`purchase_timeline`, `help_type` |
-| GA4 Event - Qualified Lead | `qualified_lead` | CE - Generate Lead - Qualified | samostatná GA4 událost |
 | Google Ads Conversion - Generate Lead | konverze | CE - Generate Lead | +`conversionValue`, `currencyCode: CZK` |
+| Meta Pixel - Qualified Lead | `QualifiedLead` (custom) | CE - Generate Lead - Qualified | pro optimalizaci kampaní |
+| GA4 Event - Qualified Lead | `qualified_lead` | CE - Generate Lead - Qualified | samostatná GA4 událost |
 | Google Ads Conversion - Generate Qualified Lead | konverze | CE - Generate Lead - Qualified | +`conversionValue`, `currencyCode: CZK` |
+| Meta Pixel - View Price Result | `view_price_result` | CE - View Price Result | +`purchase_timeline`, `help_type` |
+| GA4 Event - View Price Result | `view_price_result` | CE - View Price Result | +`purchase_timeline`, `help_type` |
+
+**Trigger CE - Generate Lead - Qualified — podmínka:**
+- Event: `generate_lead`
+- `{{DLV - Help Type}}` matchesRegex `^(want_offer|want_consultation)$`
+- `purchase_timeline` se neevaluuje — QualifiedLead se odešle vždy, když lead chce nabídku nebo konzultaci
 
 **GA4 Custom Dimensions** (nutné zaregistrovat v GA4 Admin → Custom definitions):
 - `purchase_timeline` (event-scoped)
