@@ -24,50 +24,59 @@ const LABELS = {
 const l = (field, value) => (value !== undefined && value !== null ? (LABELS[field]?.[value] ?? value) : '');
 
 const HEADERS = [
-  'Datum', 'Segment', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
+  'Datum', 'Poznámky', 'Další krok', 'Výsledek schůzky', 'Jméno', 'Město',
+  'Segment', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
+  // Intent (všechny segmenty)
+  'Plánovaná realizace', 'Požadavek leada',
+  // Firemní prostředí
+  'Stav přípravy', 'Rozúčtování nákladů', 'Cílová skupina',
+  // Bytový dům
+  'Společný výkon k dispozici', 'Místo instalace', 'Stav schválení',
   // Rodinný dům
   'Vzdálenost od rozvaděče', 'Smart funkce', 'Místo nabíjení', 'Parkovací místo', 'Rychlost nabíjení',
-  // Firemní prostředí
-  'Počet vozů', 'Výkon DC stanice (kW)', 'Stav přípravy', 'Rozúčtování nákladů', 'Cílová skupina',
-  // Bytový dům
-  'Počet stanic', 'Společný výkon k dispozici', 'Role žadatele', 'Místo instalace', 'Stav schválení',
-  // Intent (všechny segmenty)
-  'Termín instalace', 'Zájem leada',
+  // Firemní prostředí (pokr.)
+  'Počet vozů', 'Výkon DC stanice (kW)',
+  // Bytový dům (pokr.)
+  'Počet stanic', 'Role žadatele',
   // UTM (všechny segmenty)
   'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Ad Set', 'UTM Content',
 ];
+
+const SEG_HEADER_PREFIX = [
+  'Datum', 'Poznámky', 'Další krok', 'Výsledek schůzky', 'Jméno', 'Město',
+  'Email', 'Telefon', 'Odhadovaná cena (Kč)',
+  'Plánovaná realizace', 'Požadavek leada',
+];
+const SEG_HEADER_SUFFIX = ['UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Ad Set', 'UTM Content'];
 
 // --- Segment-specific sheets ---
 const SEGMENT_SHEETS = {
   rodinny: {
     name: 'Rodinný dům',
     headers: [
-      'Datum', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
+      ...SEG_HEADER_PREFIX,
       'Vzdálenost od rozvaděče', 'Smart funkce', 'Místo nabíjení', 'Parkovací místo', 'Rychlost nabíjení',
-      'Termín instalace', 'Zájem leada',
-      'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Ad Set', 'UTM Content',
+      ...SEG_HEADER_SUFFIX,
     ],
-    priceColIndex: 3,
+    priceColIndex: 8,
   },
   firemni: {
     name: 'Firemní prostředí',
     headers: [
-      'Datum', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
+      ...SEG_HEADER_PREFIX,
       'Počet vozů', 'Výkon DC stanice (kW)', 'Stav přípravy', 'Rozúčtování nákladů', 'Cílová skupina',
-      'Termín instalace', 'Zájem leada',
-      'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Ad Set', 'UTM Content',
+      ...SEG_HEADER_SUFFIX,
     ],
-    priceColIndex: 3,
+    priceColIndex: 8,
   },
   bytovy: {
     name: 'Bytový dům',
     headers: [
-      'Datum', 'Email', 'Telefon', 'Odhadovaná cena (Kč)',
+      ...SEG_HEADER_PREFIX,
       'Počet stanic', 'Společný výkon k dispozici', 'Role žadatele', 'Místo instalace', 'Stav schválení',
-      'Termín instalace', 'Zájem leada',
-      'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Ad Set', 'UTM Content',
+      ...SEG_HEADER_SUFFIX,
     ],
-    priceColIndex: 3,
+    priceColIndex: 8,
   },
 };
 
@@ -217,7 +226,11 @@ function buildSegmentRow(segment, data) {
   const sf = q.smartFunctions || {};
   const utm = data.utm || {};
   const date = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Prague' });
-  const common = [date, data.email, `'${data.phone}`, data.estimatedPrice || ''];
+  const common = [
+    date,
+    '', '', '', '', '',                       // Poznámky, Další krok, Výsledek schůzky, Jméno, Město
+    data.email, `'${data.phone}`, data.estimatedPrice || '',
+  ];
 
   const intentCols = [
     l('purchaseTimeline', data.purchaseTimeline),
@@ -241,12 +254,12 @@ function buildSegmentRow(segment, data) {
     ].filter(Boolean).join(', ');
     return [
       ...common,
+      ...intentCols,
       l('distance', q.distance),
       smartList || '',
       l('chargingLocation', q.chargingLocation),
       l('parkingSpace', q.parkingSpace),
       l('chargingSpeed', q.chargingSpeed),
-      ...intentCols,
       ...utmCols,
     ];
   }
@@ -254,12 +267,12 @@ function buildSegmentRow(segment, data) {
   if (segment === 'firemni') {
     return [
       ...common,
+      ...intentCols,
       l('carCount', q.carCount),
       l('dcStation', q.dcStation ?? ''),
       l('preparationState', q.preparationState),
       q.costAccounting ? 'Ano' : 'Ne',
       l('targetAudience', q.targetAudience),
-      ...intentCols,
       ...utmCols,
     ];
   }
@@ -267,12 +280,12 @@ function buildSegmentRow(segment, data) {
   if (segment === 'bytovy') {
     return [
       ...common,
+      ...intentCols,
       parseInt(q.stationCount) || '',
       l('commonPower', q.commonPower),
       l('role', q.role),
       l('installLocation', q.installLocation),
       l('approvalStatus', q.approvalStatus),
-      ...intentCols,
       ...utmCols,
     ];
   }
@@ -294,7 +307,7 @@ async function appendToSheet(data) {
   const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
   const sheetName = process.env.GOOGLE_SHEET_NAME || 'VŠECHNY TYPY';
 
-  await ensureHeaders(sheets, spreadsheetId, sheetName, HEADERS, 4);
+  await ensureHeaders(sheets, spreadsheetId, sheetName, HEADERS, 9);
 
   const q = data.questionnaire || {};
   const sf = q.smartFunctions || {};
@@ -312,41 +325,44 @@ async function appendToSheet(data) {
   const isBytovy = data.segment === 'bytovy';
 
   const row = [
-    new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Prague' }),  // A: Datum (YYYY-MM-DD HH:MM:SS → Sheets datetime)
-    segmentLabel(data.segment),                                          // B: Segment
-    data.email,                                                          // C: Email
-    `'${data.phone}`,                                                    // D: Telefon (apostrophe prefix → Sheets stores as text, keeps +)
-    data.estimatedPrice || '',                                           // E: Cena (number)
-    // Rodinný dům (F–J)
-    isRodinny ? l('distance', q.distance) : '',                          // F: Vzdálenost od rozvaděče
-    isRodinny ? (smartFunctions || '') : '',                             // G: Smart funkce
-    isRodinny ? l('chargingLocation', q.chargingLocation) : '',          // H: Místo nabíjení
-    isRodinny ? l('parkingSpace', q.parkingSpace) : '',                  // I: Parkovací místo
-    isRodinny ? l('chargingSpeed', q.chargingSpeed) : '',                // J: Rychlost nabíjení
-    // Firemní prostředí (K–O)
-    isFiremni ? l('carCount', q.carCount) : '',                          // K: Počet vozů
-    isFiremni ? l('dcStation', q.dcStation ?? '') : '',                  // L: Výkon DC stanice
+    new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Prague' }),  // A: Datum
+    '', '', '', '', '',                                                   // B–F: Poznámky, Další krok, Výsledek schůzky, Jméno, Město
+    segmentLabel(data.segment),                                          // G: Segment
+    data.email,                                                          // H: Email
+    `'${data.phone}`,                                                    // I: Telefon
+    data.estimatedPrice || '',                                           // J: Cena (number)
+    l('purchaseTimeline', data.purchaseTimeline),                        // K: Plánovaná realizace
+    l('helpType', data.helpType),                                        // L: Požadavek leada
+    // Firemní prostředí (M–O)
     isFiremni ? l('preparationState', q.preparationState) : '',          // M: Stav přípravy
     isFiremni ? (q.costAccounting ? 'Ano' : 'Ne') : '',                  // N: Rozúčtování nákladů
     isFiremni ? l('targetAudience', q.targetAudience) : '',              // O: Cílová skupina
-    // Bytový dům (P–T)
-    isBytovy ? (parseInt(q.stationCount) || '') : '',                    // P: Počet stanic (number)
-    isBytovy ? l('commonPower', q.commonPower) : '',                     // Q: Společný výkon
-    isBytovy ? l('role', q.role) : '',                                   // R: Role žadatele
-    isBytovy ? l('installLocation', q.installLocation) : '',             // S: Místo instalace
-    isBytovy ? l('approvalStatus', q.approvalStatus) : '',               // T: Stav schválení
-    l('purchaseTimeline', data.purchaseTimeline),                         // U: Termín instalace
-    l('helpType', data.helpType),                                         // V: Zájem leada
-    utm.utm_source   || '',                                               // W: UTM Source
-    utm.utm_medium   || '',                                               // X: UTM Medium
-    utm.utm_campaign || '',                                               // Y: UTM Campaign
-    utm.utm_adset    || '',                                               // Z: UTM Ad Set
-    utm.utm_content  || '',                                               // AA: UTM Content
+    // Bytový dům (P–R)
+    isBytovy ? l('commonPower', q.commonPower) : '',                     // P: Společný výkon
+    isBytovy ? l('installLocation', q.installLocation) : '',             // Q: Místo instalace
+    isBytovy ? l('approvalStatus', q.approvalStatus) : '',               // R: Stav schválení
+    // Rodinný dům (S–W)
+    isRodinny ? l('distance', q.distance) : '',                          // S: Vzdálenost od rozvaděče
+    isRodinny ? (smartFunctions || '') : '',                             // T: Smart funkce
+    isRodinny ? l('chargingLocation', q.chargingLocation) : '',          // U: Místo nabíjení
+    isRodinny ? l('parkingSpace', q.parkingSpace) : '',                  // V: Parkovací místo
+    isRodinny ? l('chargingSpeed', q.chargingSpeed) : '',                // W: Rychlost nabíjení
+    // Firemní prostředí (X–Y)
+    isFiremni ? l('carCount', q.carCount) : '',                          // X: Počet vozů
+    isFiremni ? l('dcStation', q.dcStation ?? '') : '',                  // Y: Výkon DC stanice
+    // Bytový dům (Z–AA)
+    isBytovy ? (parseInt(q.stationCount) || '') : '',                    // Z: Počet stanic
+    isBytovy ? l('role', q.role) : '',                                   // AA: Role žadatele
+    utm.utm_source   || '',                                               // AB: UTM Source
+    utm.utm_medium   || '',                                               // AC: UTM Medium
+    utm.utm_campaign || '',                                               // AD: UTM Campaign
+    utm.utm_adset    || '',                                               // AE: UTM Ad Set
+    utm.utm_content  || '',                                               // AF: UTM Content
   ];
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: `'${sheetName}'!A:AA`,
+    range: `'${sheetName}'!A:AF`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
@@ -359,7 +375,7 @@ async function appendToSheet(data) {
     const segRow = buildSegmentRow(data.segment, data);
     await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: `'${seg.name}'!A:P`,
+      range: `'${seg.name}'!A:U`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [segRow] },
     });

@@ -54,50 +54,63 @@ NOTIFICATION_EMAIL             # marketing@niftyminds.cz
 ### Záložky
 | Název záložky | Obsah |
 |---------------|-------|
-| `VŠECHNY TYPY` | Hlavní přehled — všechny segmenty, 22 sloupců (A–V) |
-| `Rodinný dům` | Pouze rodinny leads, 16 sloupců |
-| `Firemní prostředí` | Pouze firemni leads, 16 sloupců |
-| `Bytový dům` | Pouze bytovy leads, 16 sloupců |
+| `VŠECHNY TYPY` | Hlavní přehled — všechny segmenty, 33 sloupců (A–AG) |
+| `Rodinný dům` | Pouze rodinny leads, 22 sloupců |
+| `Firemní prostředí` | Pouze firemni leads, 22 sloupců |
+| `Bytový dům` | Pouze bytovy leads, 22 sloupců |
 
 Přejmenování hlavní záložky: změnit název v Sheets + aktualizovat `GOOGLE_SHEET_NAME` v Vercel env (a `.env` lokálně).
 
-### Sloupce hlavní záložky (A–AA)
+### Sloupce hlavní záložky (A–AG)
 | Sl. | Název | Typ |
 |-----|-------|-----|
 | A | Datum | datetime string (`YYYY-MM-DD HH:MM:SS`) |
-| B | Segment | string |
-| C | Email | string |
-| D | Telefon | string (apostrofem chráněný před Sheets formulí) |
-| E | Odhadovaná cena (Kč) | **number** — formátováno jako `#,##0 "Kč"` přes batchUpdate |
-| F | Vzdálenost od rozvaděče | rodinny |
-| G | Smart funkce | rodinny |
-| H | Místo nabíjení | rodinny |
-| I | Parkovací místo | rodinny |
-| J | Rychlost nabíjení | rodinny |
-| K | Počet vozů | firemni |
-| L | Výkon DC stanice (kW) | firemni |
+| B | Poznámky | prázdné — klient vyplní |
+| C | Další krok | prázdné — klient vyplní |
+| D | Výsledek schůzky | prázdné — klient vyplní |
+| E | Jméno | prázdné — klient vyplní |
+| F | Město | prázdné — klient vyplní |
+| G | Segment | string |
+| H | Email | string |
+| I | Telefon | string (apostrofem chráněný před Sheets formulí) |
+| J | Odhadovaná cena (Kč) | **number** — formátováno jako `#,##0 "Kč"` přes batchUpdate |
+| K | Plánovaná realizace | všechny segmenty — `intentData.purchaseTimeline` |
+| L | Zájem leada | všechny segmenty — `intentData.helpType` |
 | M | Stav přípravy | firemni |
 | N | Rozúčtování nákladů | firemni |
 | O | Cílová skupina | firemni |
-| P | Počet stanic | bytovy |
-| Q | Společný výkon k dispozici | bytovy |
-| R | Role žadatele | bytovy |
-| S | Místo instalace | bytovy |
-| T | Stav schválení | bytovy |
-| U | Termín instalace | všechny segmenty — `intentData.purchaseTimeline` |
-| V | Zájem leada | všechny segmenty — `intentData.helpType` |
-| W | UTM Source | všechny segmenty — `utm.utm_source` |
-| X | UTM Medium | všechny segmenty — `utm.utm_medium` |
-| Y | UTM Campaign | všechny segmenty — `utm.utm_campaign` |
-| Z | UTM Ad Set | všechny segmenty — `utm.utm_adset` (Meta: `{{adset.name}}`) |
-| AA | UTM Content | všechny segmenty — `utm.utm_content` |
+| P | Společný výkon k dispozici | bytovy |
+| Q | Místo instalace | bytovy |
+| R | Stav schválení | bytovy |
+| S | Požadavek zákazníka | prázdné — klient vyplní |
+| T | Vzdálenost od rozvaděče | rodinny |
+| U | Smart funkce | rodinny |
+| V | Místo nabíjení | rodinny |
+| W | Parkovací místo | rodinny |
+| X | Rychlost nabíjení | rodinny |
+| Y | Počet vozů | firemni |
+| Z | Výkon DC stanice (kW) | firemni |
+| AA | Počet stanic | bytovy |
+| AB | Role žadatele | bytovy |
+| AC | UTM Source | všechny segmenty — `utm.utm_source` |
+| AD | UTM Medium | všechny segmenty — `utm.utm_medium` |
+| AE | UTM Campaign | všechny segmenty — `utm.utm_campaign` |
+| AF | UTM Ad Set | všechny segmenty — `utm.utm_adset` (Meta: `{{adset.name}}`) |
+| AG | UTM Content | všechny segmenty — `utm.utm_content` |
 
 Nevyplněné buňky (jiný segment nebo chybějící UTM) → prázdný string `''`.
 
-### Intent data (záměr leada)
-Dvě otázky zobrazené na konci dotazníku ve všech třech segmentech, těsně před kontaktním formulářem. Odpovědi se zapisují do sloupců U a V (hlavní záložka) a do posledních dvou sloupců každé segmentové záložky.
+### Segmentové záložky — 22 sloupců (A–V)
+Každá záložka má stejný prefix (A–L) + 5 segment-specifických sloupců (M–Q) + UTM (R–V):
+- prefix: Datum, Poznámky, Další krok, Výsledek schůzky, Jméno, Město, Email, Telefon, Odhadovaná cena, Plánovaná realizace, Zájem leada, Požadavek zákazníka
+- **Rodinný dům** (M–Q): Vzdálenost od rozvaděče, Smart funkce, Místo nabíjení, Parkovací místo, Rychlost nabíjení
+- **Firemní prostředí** (M–Q): Počet vozů, Výkon DC stanice (kW), Stav přípravy, Rozúčtování nákladů, Cílová skupina
+- **Bytový dům** (M–Q): Počet stanic, Společný výkon k dispozici, Role žadatele, Místo instalace, Stav schválení
 
-**Termín instalace** (`purchaseTimeline`):
+### Intent data (záměr leada)
+Dvě otázky zobrazené na konci dotazníku ve všech třech segmentech, těsně před kontaktním formulářem. Odpovědi se zapisují do sloupců K a L (hlavní záložka) a do sloupců J a K každé segmentové záložky.
+
+**Plánovaná realizace** (`purchaseTimeline`):
 | Hodnota | Label v Sheets |
 |---------|---------------|
 | `do-3-mesicu` | Do 3 měsíců |
@@ -114,7 +127,7 @@ Dvě otázky zobrazené na konci dotazníku ve všech třech segmentech, těsně
 | `no_action` | Jen orientační cena | „Po odeslání se zobrazí váš cenový odhad…" (šedý box) |
 
 ### UTM parametry (zdroj návštěvníka)
-Zachycují se při načtení stránky z URL (`new URLSearchParams(window.location.search)`), uloží se do `utmData` state a odešlou se spolu s formulářem v poli `utm`. Zapisují se do sloupců W–AA (hlavní záložka) a do posledních 5 sloupců každé segmentové záložky.
+Zachycují se při načtení stránky z URL (`new URLSearchParams(window.location.search)`), uloží se do `utmData` state a odešlou se spolu s formulářem v poli `utm`. Zapisují se do sloupců AC–AG (hlavní záložka) a do posledních 5 sloupců každé segmentové záložky (R–V).
 
 **Aktuální UTM šablona v Meta Ads:**
 ```
