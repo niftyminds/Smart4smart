@@ -16,8 +16,8 @@ function loadEnv() {
 }
 loadEnv();
 
-const NEXT_STEP_OPTIONS = ['Odpad', 'Jen zaslání informací', 'Rozpracováno', 'Schůzka nebo zájem', 'Volat v budoucnu', 'Realizace'];
-const MEETING_RESULT_OPTIONS = ['Nezájem - cena', 'Nezájem - jiné', 'Zájem'];
+const NEXT_STEP_OPTIONS = ['Odpad', 'Jen zaslání informací', 'Rozpracováno', 'Schůzka nebo zájem o nabídku', 'Volat v budoucnu', 'Realizace'];
+const MEETING_RESULT_OPTIONS = ['Nezájem - cena', 'Nezájem - jiné', 'Zájem', 'Realizace'];
 
 function dropdownRule(values) {
   return {
