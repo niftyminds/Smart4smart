@@ -42,44 +42,6 @@ const HEADERS = [
   'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Ad Set', 'UTM Content',
 ];
 
-const SEG_HEADER_PREFIX = [
-  'Datum', 'Poznámky', 'Další krok', 'Výsledek schůzky', 'Jméno', 'Město',
-  'Email', 'Telefon', 'Odhadovaná cena (Kč)',
-  'Plánovaná realizace', 'Požadavek leada',
-];
-const SEG_HEADER_SUFFIX = ['UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Ad Set', 'UTM Content'];
-
-// --- Segment-specific sheets ---
-const SEGMENT_SHEETS = {
-  rodinny: {
-    name: 'Rodinný dům',
-    headers: [
-      ...SEG_HEADER_PREFIX,
-      'Vzdálenost od rozvaděče', 'Smart funkce', 'Místo nabíjení', 'Parkovací místo', 'Rychlost nabíjení',
-      ...SEG_HEADER_SUFFIX,
-    ],
-    priceColIndex: 8,
-  },
-  firemni: {
-    name: 'Firemní prostředí',
-    headers: [
-      ...SEG_HEADER_PREFIX,
-      'Počet vozů', 'Výkon DC stanice (kW)', 'Stav přípravy', 'Rozúčtování nákladů', 'Cílová skupina',
-      ...SEG_HEADER_SUFFIX,
-    ],
-    priceColIndex: 8,
-  },
-  bytovy: {
-    name: 'Bytový dům',
-    headers: [
-      ...SEG_HEADER_PREFIX,
-      'Počet stanic', 'Společný výkon k dispozici', 'Role žadatele', 'Místo instalace', 'Stav schválení',
-      ...SEG_HEADER_SUFFIX,
-    ],
-    priceColIndex: 8,
-  },
-};
-
 // --- Retry helper ---
 async function withRetry(fn, label, maxAttempts = 3) {
   let lastError;
@@ -157,18 +119,6 @@ function segmentLabel(segment) {
   return segment;
 }
 
-// --- Ensure sheet tab exists (creates it if missing) ---
-async function ensureSheetExists(sheets, spreadsheetId, sheetName) {
-  const meta = await sheets.spreadsheets.get({ spreadsheetId });
-  const exists = meta.data.sheets.some((s) => s.properties.title === sheetName);
-  if (!exists) {
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
-      requestBody: { requests: [{ addSheet: { properties: { title: sheetName } } }] },
-    });
-  }
-}
-
 // --- Ensure header row exists and price column is formatted as currency ---
 async function ensureHeaders(sheets, spreadsheetId, sheetName, expectedHeaders, priceColIndex = 4) {
   const getRes = await sheets.spreadsheets.values.get({
@@ -218,79 +168,6 @@ async function ensureHeaders(sheets, spreadsheetId, sheetName, expectedHeaders, 
       ],
     },
   });
-}
-
-// --- Build a segment-specific row (common fields + segment fields only) ---
-function buildSegmentRow(segment, data) {
-  const q = data.questionnaire || {};
-  const sf = q.smartFunctions || {};
-  const utm = data.utm || {};
-  const date = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Prague' });
-  const common = [
-    date,
-    '', '', '', '', '',                       // Poznámky, Další krok, Výsledek schůzky, Jméno, Město
-    data.email, `'${data.phone}`, data.estimatedPrice || '',
-  ];
-
-  const intentCols = [
-    l('purchaseTimeline', data.purchaseTimeline),
-    l('helpType', data.helpType),
-  ];
-
-  const utmCols = [
-    utm.utm_source   || '',
-    utm.utm_medium   || '',
-    utm.utm_campaign || '',
-    utm.utm_adset    || '',
-    utm.utm_content  || '',
-  ];
-
-  if (segment === 'rodinny') {
-    const smartList = [
-      sf.dynamicPower && 'Dynamické řízení výkonu + RFID',
-      sf.lowTariff && 'Nabíjení v nízkém tarifu',
-      sf.planning && 'Plánování nabíjení',
-      sf.rfid && 'RFID zabezpečení',
-    ].filter(Boolean).join(', ');
-    return [
-      ...common,
-      ...intentCols,
-      l('distance', q.distance),
-      smartList || '',
-      l('chargingLocation', q.chargingLocation),
-      l('parkingSpace', q.parkingSpace),
-      l('chargingSpeed', q.chargingSpeed),
-      ...utmCols,
-    ];
-  }
-
-  if (segment === 'firemni') {
-    return [
-      ...common,
-      ...intentCols,
-      l('carCount', q.carCount),
-      l('dcStation', q.dcStation ?? ''),
-      l('preparationState', q.preparationState),
-      q.costAccounting ? 'Ano' : 'Ne',
-      l('targetAudience', q.targetAudience),
-      ...utmCols,
-    ];
-  }
-
-  if (segment === 'bytovy') {
-    return [
-      ...common,
-      ...intentCols,
-      parseInt(q.stationCount) || '',
-      l('commonPower', q.commonPower),
-      l('role', q.role),
-      l('installLocation', q.installLocation),
-      l('approvalStatus', q.approvalStatus),
-      ...utmCols,
-    ];
-  }
-
-  return common;
 }
 
 // --- Append row to Google Sheets ---
@@ -367,19 +244,6 @@ async function appendToSheet(data) {
     requestBody: { values: [row] },
   });
 
-  // Append to segment-specific sheet
-  const seg = SEGMENT_SHEETS[data.segment];
-  if (seg) {
-    await ensureSheetExists(sheets, spreadsheetId, seg.name);
-    await ensureHeaders(sheets, spreadsheetId, seg.name, seg.headers, seg.priceColIndex);
-    const segRow = buildSegmentRow(data.segment, data);
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: `'${seg.name}'!A:U`,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [segRow] },
-    });
-  }
 }
 
 // --- Send success notification email ---
