@@ -206,7 +206,7 @@ async function appendToSheet(data) {
     '', '', '', '', '',                                                   // B–F: Poznámky, Další krok, Výsledek schůzky, Jméno, Město
     segmentLabel(data.segment),                                          // G: Segment
     data.email,                                                          // H: Email
-    `'${data.phone}`,                                                    // I: Telefon
+    `'${data.phone.replace(/^\+/, '')}`,                                 // I: Telefon (without + to match archive format)
     data.estimatedPrice || '',                                           // J: Cena (number)
     l('purchaseTimeline', data.purchaseTimeline),                        // K: Plánovaná realizace
     l('helpType', data.helpType),                                        // L: Požadavek leada
